@@ -14,6 +14,7 @@ from datetime import datetime
 import logging
 from typing import Any
 
+from homeassistant.components.sensor import ATTR_LAST_RESET
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
@@ -30,8 +31,8 @@ from homeassistant.helpers.event import (
     async_track_template_result,
     async_track_time_change,
 )
-from homeassistant.helpers.template import Template
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
 from .calculation import FlowInput, FlowResult, calculate_flow
@@ -69,6 +70,12 @@ UNIT_TO_KWH: dict[str, float] = {
 # as a meter reset (for example a "per day" counter at midnight). Smaller drops
 # are treated as measurement noise and ignored.
 RESET_THRESHOLD = 0.5
+
+# One update of a meter can not plausibly add more energy than this (kWh).
+# Larger jumps come from a meter that briefly reported 0 or a wrong value (or
+# was unavailable for a long time) and are ignored instead of being booked in
+# one quarter.
+MAX_DELTA_KWH = 10.0
 
 
 def period_start(moment: datetime) -> datetime:
@@ -161,6 +168,11 @@ def state_to_price(state: State | None) -> float | None:
     return value * factor
 
 
+def create_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    """Return the store with the period state of a config entry."""
+    return Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}")
+
+
 class ElectricityFlowEngine:
     """Collects the period energy per source and calculates the flows."""
 
@@ -182,6 +194,8 @@ class ElectricityFlowEngine:
         # last seen meter value (kWh) and energy in the current period per entity
         self._last_value: dict[str, float] = {}
         self._period_energy: dict[str, float] = {}
+        # last seen last_reset attribute per entity (meters that report resets)
+        self._source_reset: dict[str, str] = {}
         # price source -> average price of the current period
         self._price_avg: dict[str, PriceAverager] = {
             source: PriceAverager() for source in set(self.prices.values())
@@ -189,9 +203,7 @@ class ElectricityFlowEngine:
 
         self._listeners: list[Callable[[], None]] = []
         self._booking_listeners: list[Callable[[QuarterBooking], None]] = []
-        self._store: Store[dict[str, Any]] = Store(
-            hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}"
-        )
+        self._store: Store[dict[str, Any]] = create_store(hass, entry.entry_id)
 
     @property
     def entity_ids(self) -> list[str]:
@@ -209,26 +221,20 @@ class ElectricityFlowEngine:
         await self._async_restore()
 
         for entity_id in self.entity_ids:
-            self._process_value(entity_id, state_to_kwh(self.hass.states.get(entity_id)))
+            self._process_state(entity_id, self.hass.states.get(entity_id))
         self._recalculate()
 
         now = dt_util.now()
         price_entities = [s for s in self._price_avg if not s.startswith(TEMPLATE_PREFIX)]
         for entity_id in price_entities:
-            self._price_avg[entity_id].update(
-                state_to_price(self.hass.states.get(entity_id)), now
-            )
+            self._price_avg[entity_id].update(state_to_price(self.hass.states.get(entity_id)), now)
 
         self.entry.async_on_unload(
-            async_track_state_change_event(
-                self.hass, self.entity_ids, self._handle_source_change
-            )
+            async_track_state_change_event(self.hass, self.entity_ids, self._handle_source_change)
         )
         if price_entities:
             self.entry.async_on_unload(
-                async_track_state_change_event(
-                    self.hass, price_entities, self._handle_price_change
-                )
+                async_track_state_change_event(self.hass, price_entities, self._handle_price_change)
             )
         for source in self._price_avg:
             if source.startswith(TEMPLATE_PREFIX):
@@ -264,10 +270,15 @@ class ElectricityFlowEngine:
             k: float(v) for k, v in data.get("last_value", {}).items() if k in configured
         }
         self._period_energy = {
-            k: float(v)
-            for k, v in data.get("period_energy", {}).items()
-            if k in configured
+            k: float(v) for k, v in data.get("period_energy", {}).items() if k in configured
         }
+        self._source_reset = {
+            k: str(v) for k, v in data.get("source_reset", {}).items() if k in configured
+        }
+
+    async def async_save(self) -> None:
+        """Write the period state now (on unload), instead of delayed."""
+        await self._store.async_save(self._data_to_save())
 
     def _data_to_save(self) -> dict[str, Any]:
         now = dt_util.now()
@@ -275,9 +286,9 @@ class ElectricityFlowEngine:
             "period_start": self.period_start.isoformat(),
             "last_value": self._last_value,
             "period_energy": self._period_energy,
+            "source_reset": self._source_reset,
             "prices": {
-                entity_id: averager.as_dict(now)
-                for entity_id, averager in self._price_avg.items()
+                entity_id: averager.as_dict(now) for entity_id, averager in self._price_avg.items()
             },
         }
 
@@ -321,7 +332,7 @@ class ElectricityFlowEngine:
         # second 0), make sure energy is not booked in an old period.
         if period_start(dt_util.now()) != self.period_start:
             self._start_new_period(dt_util.now())
-        self._process_value(event.data["entity_id"], state_to_kwh(event.data["new_state"]))
+        self._process_state(event.data["entity_id"], event.data["new_state"])
         self._recalculate()
         self._notify()
 
@@ -390,8 +401,7 @@ class ElectricityFlowEngine:
             return
         # Close the price averages at the real end of the quarter
         averages = {
-            entity_id: averager.finish(end)
-            for entity_id, averager in self._price_avg.items()
+            entity_id: averager.finish(end) for entity_id, averager in self._price_avg.items()
         }
         costs: dict[str, QuarterCost] = {}
         for key, entity_id in self.prices.items():
@@ -410,25 +420,55 @@ class ElectricityFlowEngine:
     # ------------------------------------------------------------ calculation
 
     @callback
-    def _process_value(self, entity_id: str, value: float | None) -> None:
-        """Add the increase of a meter to the energy of the current period."""
-        if value is None:
+    def _process_state(self, entity_id: str, state: State | None) -> None:
+        """Process a new state of a source meter."""
+        value = state_to_kwh(state)
+        if state is None or value is None:
             return
+        last_reset = state.attributes.get(ATTR_LAST_RESET)
+        self._process_value(entity_id, value, None if last_reset is None else str(last_reset))
+
+    @callback
+    def _process_value(self, entity_id: str, value: float, last_reset: str | None = None) -> None:
+        """Add the increase of a meter to the energy of the current period.
+
+        last_reset is the last_reset attribute of the meter (if it has one). A
+        change of it means the meter started again from zero, like a daily
+        counter at midnight.
+        """
+        previous_reset = self._source_reset.get(entity_id)
+        if last_reset is not None:
+            self._source_reset[entity_id] = last_reset
         previous = self._last_value.get(entity_id)
-        self._last_value[entity_id] = value
         if previous is None:
+            self._last_value[entity_id] = value
             return
         delta = value - previous
-        if delta < 0:
-            if value < previous * RESET_THRESHOLD:
-                # Meter was reset (e.g. daily counter), count from zero
-                _LOGGER.debug("Meter reset detected for %s", entity_id)
-                delta = value
-            else:
+        if last_reset is not None and previous_reset is not None and last_reset != previous_reset:
+            # The meter reports a reset: all of its value is new energy
+            _LOGGER.debug("Meter %s reports a reset (last_reset %s)", entity_id, last_reset)
+            delta = value
+        elif delta < 0:
+            if value >= previous * RESET_THRESHOLD:
+                # Measurement noise: keep the old reading as baseline, so the
+                # dip is not counted again when the meter goes back up
                 _LOGGER.debug(
                     "Ignoring small decrease of %s (%s -> %s)", entity_id, previous, value
                 )
-                delta = 0.0
+                return
+            # Meter was reset (e.g. daily counter), count from zero
+            _LOGGER.debug("Meter reset detected for %s", entity_id)
+            delta = value
+        self._last_value[entity_id] = value
+        if delta > MAX_DELTA_KWH:
+            _LOGGER.warning(
+                "Ignoring implausible increase of %s kWh for %s (%s -> %s)",
+                round(delta, OUTPUT_PRECISION),
+                entity_id,
+                previous,
+                value,
+            )
+            return
         if delta:
             self._period_energy[entity_id] = self._period_energy.get(entity_id, 0.0) + delta
 

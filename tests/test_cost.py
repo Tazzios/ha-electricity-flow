@@ -1,6 +1,6 @@
 """Tests of the pure cost helpers."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -12,7 +12,7 @@ from custom_components.electricity_flow.cost import (
     price_factor,
 )
 
-T0 = datetime(2026, 11, 21, 14, 0, tzinfo=timezone.utc)
+T0 = datetime(2026, 11, 21, 14, 0, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(
@@ -88,9 +88,7 @@ def test_storage_roundtrip_same_quarter():
     restored.restore(data, same_quarter=True)
     # Home Assistant was down for 2 minutes, then the price is 0.40
     restored.update(0.40, T0 + timedelta(minutes=7))
-    assert restored.finish(T0 + timedelta(minutes=15)) == pytest.approx(
-        (5 * 0.20 + 8 * 0.40) / 13
-    )
+    assert restored.finish(T0 + timedelta(minutes=15)) == pytest.approx((5 * 0.20 + 8 * 0.40) / 13)
 
 
 def test_storage_other_quarter_keeps_only_last_valid():
@@ -106,6 +104,6 @@ def test_cost_and_periods():
     assert QuarterCost(kwh=0.5, price=0.3).cost == pytest.approx(0.15)
     # Negative prices give a negative cost
     assert QuarterCost(kwh=0.5, price=-0.1).cost == pytest.approx(-0.05)
-    moment = datetime(2026, 11, 21, 23, 45, tzinfo=timezone.utc)
-    assert day_start(moment) == datetime(2026, 11, 21, tzinfo=timezone.utc)
-    assert month_start(moment) == datetime(2026, 11, 1, tzinfo=timezone.utc)
+    moment = datetime(2026, 11, 21, 23, 45, tzinfo=UTC)
+    assert day_start(moment) == datetime(2026, 11, 21, tzinfo=UTC)
+    assert month_start(moment) == datetime(2026, 11, 1, tzinfo=UTC)

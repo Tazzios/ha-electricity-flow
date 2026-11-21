@@ -55,11 +55,7 @@ def calculate_flow(data: FlowInput, precision: int = 3) -> FlowResult:
     grid_export = max(-grid_power, 0.0)
 
     house_consumption = max(
-        solar_production
-        + battery_discharge
-        + grid_import
-        - battery_charge
-        - grid_export,
+        solar_production + battery_discharge + grid_import - battery_charge - grid_export,
         0.0,
     )
 

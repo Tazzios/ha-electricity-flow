@@ -48,6 +48,7 @@ def price_option(output_key: str) -> str:
     """Return the option key of the price entity of an output flow."""
     return f"{CONF_PRICE_PREFIX}{output_key}"
 
+
 # Option key of a price template of an output: "price_template_<output key>"
 CONF_PRICE_TEMPLATE_PREFIX: Final = "price_template_"
 

@@ -8,12 +8,18 @@ template (currency per kWh).
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import section
@@ -107,9 +113,9 @@ def _group_fields(group: Group, defaults: dict[str, Any]) -> dict[Any, Any]:
             (price_option(output), PRICE_ENTITY),
             (price_template_option(output), PRICE_TEMPLATE),
         ):
-            fields[
-                vol.Optional(option, description={"suggested_value": defaults.get(option)})
-            ] = field_selector
+            fields[vol.Optional(option, description={"suggested_value": defaults.get(option)})] = (
+                field_selector
+            )
     return fields
 
 
@@ -122,7 +128,9 @@ def _page_schema(page: str, defaults: dict[str, Any]) -> vol.Schema:
             fields.update(group_fields)
         else:
             fields[vol.Required(group.name)] = section(
-                vol.Schema(group_fields), {"collapsed": False}
+                # Newer HA types section() for probatio, voluptuous still works
+                vol.Schema(group_fields),  # type: ignore[arg-type]
+                {"collapsed": False},
             )
     return vol.Schema(fields)
 
@@ -156,9 +164,9 @@ def _validate_sources(hass: HomeAssistant, sources: dict[str, Any]) -> dict[str,
             unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
             if unit is not None and unit not in UNIT_TO_KWH:
                 errors[key] = "invalid_unit"
-    if CONF_GRID_IMPORT_SENSOR in sources and sources.get(
-        CONF_GRID_IMPORT_SENSOR
-    ) == sources.get(CONF_GRID_EXPORT_SENSOR):
+    if CONF_GRID_IMPORT_SENSOR in sources and sources.get(CONF_GRID_IMPORT_SENSOR) == sources.get(
+        CONF_GRID_EXPORT_SENSOR
+    ):
         errors[CONF_GRID_EXPORT_SENSOR] = "same_grid_sensor"
     return errors
 
@@ -174,9 +182,12 @@ def _validate_prices(
         if entity_id and template:
             errors[price_template_option(output)] = "price_and_template"
             continue
-        if entity_id and (state := hass.states.get(entity_id)) is not None:
-            if price_factor(state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)) is None:
-                errors[price_option(output)] = "invalid_price_unit"
+        if (
+            entity_id
+            and (state := hass.states.get(entity_id)) is not None
+            and price_factor(state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)) is None
+        ):
+            errors[price_option(output)] = "invalid_price_unit"
         if template:
             try:
                 result = Template(template, hass).async_render(parse_result=False)
@@ -203,12 +214,11 @@ class _PagesMixin:
     """The pages shared by setup and options."""
 
     hass: HomeAssistant
+    async_show_form: Callable[..., ConfigFlowResult]
     _data: dict[str, Any]
     _defaults: dict[str, Any]
 
-    async def _async_page(
-        self, page: str, user_input: dict[str, Any] | None
-    ) -> ConfigFlowResult:
+    async def _async_page(self, page: str, user_input: dict[str, Any] | None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             values = _flatten(page, user_input)
@@ -230,12 +240,15 @@ class _PagesMixin:
                 self._data.update(prices)
                 next_index = PAGE_ORDER.index(page) + 1
                 if next_index < len(PAGE_ORDER):
-                    return await getattr(self, f"async_step_{PAGE_ORDER[next_index]}")()
+                    next_step: Callable[[], Awaitable[ConfigFlowResult]] = getattr(
+                        self, f"async_step_{PAGE_ORDER[next_index]}"
+                    )
+                    return await next_step()
                 return self._async_finish()
         defaults = _defaults_for_form(
             page, user_input if user_input is not None else self._defaults
         )
-        return self.async_show_form(  # type: ignore[attr-defined]
+        return self.async_show_form(
             step_id=page,
             data_schema=_page_schema(page, defaults),
             errors=errors,
@@ -246,9 +259,7 @@ class _PagesMixin:
         """Grid meters."""
         return await self._async_page(PAGE_GRID, user_input)
 
-    async def async_step_solar(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_solar(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Solar meters and prices of the solar flows."""
         return await self._async_page(PAGE_SOLAR, user_input)
 
@@ -258,9 +269,7 @@ class _PagesMixin:
         """Battery meters and prices, grouped in charge and discharge."""
         return await self._async_page(PAGE_BATTERY, user_input)
 
-    async def async_step_house(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_house(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Prices of the house consumption and of grid to home."""
         return await self._async_page(PAGE_HOUSE, user_input)
 
@@ -287,7 +296,7 @@ class ElectricityFlowConfigFlow(_PagesMixin, ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry) -> ElectricityFlowOptionsFlow:
+    def async_get_options_flow(config_entry: ConfigEntry) -> ElectricityFlowOptionsFlow:
         """Return the options flow."""
         return ElectricityFlowOptionsFlow()
 
