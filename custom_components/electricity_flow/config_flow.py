@@ -129,7 +129,7 @@ def _page_schema(page: str, defaults: dict[str, Any]) -> vol.Schema:
         else:
             fields[vol.Required(group.name)] = section(
                 # Newer HA types section() for probatio, voluptuous still works
-                vol.Schema(group_fields),  # type: ignore[arg-type]
+                vol.Schema(group_fields),  # type: ignore[arg-type, unused-ignore]
                 {"collapsed": False},
             )
     return vol.Schema(fields)
