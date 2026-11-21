@@ -36,19 +36,15 @@ monthly cost sensors. Everything can be changed later via **Configure**.
 
 ## Sensors
 
-| Entity id | Meaning |
-|---|---|
-| `sensor.ef_output_house_kwh` | House consumption |
-| `sensor.ef_output_solar_home_kwh` | Solar → home |
-| `sensor.ef_output_solar_battery_kwh` | Solar → battery |
-| `sensor.ef_output_solar_grid_kwh` | Solar → grid |
-| `sensor.ef_output_grid_home_kwh` | Grid → home |
-| `sensor.ef_output_grid_battery_kwh` | Grid → battery |
-| `sensor.ef_output_battery_home_kwh` | Battery → home |
-| `sensor.ef_output_battery_grid_kwh` | Battery → grid |
+Energy (kWh) per quarter for:
 
-With prices set, every flow also gets `sensor.ef_price_<flow>_day` and
-`sensor.ef_price_<flow>_month`. See the wiki for
+- House consumption
+- Solar → home, solar → battery, solar → grid
+- Grid → home, grid → battery
+- Battery → home, battery → grid
+
+With prices set, every flow also gets a cost sensor for today and one for this month.
+See the wiki for
 [all sensors](https://github.com/Tazzios/ha-electricity-flow/wiki/Sensors) and
 [how costs are calculated](https://github.com/Tazzios/ha-electricity-flow/wiki/Cost-calculation).
 
