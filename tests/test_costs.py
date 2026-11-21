@@ -73,9 +73,7 @@ async def _options(hass, entry, grid=GRID, solar=SOLAR, battery=BATTERY, house=N
         ("house", house or {}),
     ):
         assert result["step_id"] == step
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], user_input
-        )
+        result = await hass.config_entries.options.async_configure(result["flow_id"], user_input)
         if result.get("errors"):
             return result
     return result
@@ -131,14 +129,16 @@ async def test_options_flow_prices(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     # Entry is reloaded: only the flows with a price get cost sensors
-    assert hass.states.get("sensor.ef_price_grid_home_day") is not None
-    assert hass.states.get("sensor.ef_price_grid_home_month") is not None
-    assert hass.states.get("sensor.ef_price_grid_battery_day") is not None
+    assert hass.states.get("sensor.electricity_flow_day_eur_grid_to_home") is not None
+    assert hass.states.get("sensor.electricity_flow_month_eur_grid_to_home") is not None
+    assert hass.states.get("sensor.electricity_flow_day_eur_grid_to_battery") is not None
     assert (
-        hass.states.get("sensor.ef_price_solar_grid_day").attributes["price_template"]
+        hass.states.get("sensor.electricity_flow_day_eur_solar_to_grid").attributes[
+            "price_template"
+        ]
         == "{{ 0.1 }}"
     )
-    assert hass.states.get("sensor.ef_price_house_day") is None
+    assert hass.states.get("sensor.electricity_flow_day_eur_house") is None
 
     # The form shows the stored values again, also inside the groups
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -153,8 +153,8 @@ async def test_options_flow_prices(hass: HomeAssistant) -> None:
     result = await _options(hass, entry)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
-    assert er.async_get(hass).async_get("sensor.ef_price_grid_home_day") is None
-    assert er.async_get(hass).async_get("sensor.ef_price_solar_grid_day") is None
+    assert er.async_get(hass).async_get("sensor.electricity_flow_day_eur_grid_to_home") is None
+    assert er.async_get(hass).async_get("sensor.electricity_flow_day_eur_solar_to_grid") is None
 
 
 async def test_template_price(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
@@ -176,10 +176,9 @@ async def test_template_price(hass: HomeAssistant, freezer: FrozenDateTimeFactor
     await hass.async_block_till_done()
     await _goto(hass, freezer, _local(2026, 11, 21, 14, 15, 0))
     # 5 min at 0.30 and 10 min at 0.60 = 0.50 average, 1 kWh
-    state = hass.states.get("sensor.ef_price_grid_home_day")
+    state = hass.states.get("sensor.electricity_flow_day_eur_grid_to_home")
     assert float(state.state) == 0.5
     assert state.attributes["last_quarter_price"] == 0.5
-
 
 
 async def test_costs_per_quarter_day_and_month(
@@ -191,8 +190,8 @@ async def test_costs_per_quarter_day_and_month(
     hass.states.async_set("sensor.feed_in", 0.05, {"unit_of_measurement": "ct/kWh"})
     await _setup(hass)
 
-    day = "sensor.ef_price_grid_home_day"
-    month = "sensor.ef_price_grid_home_month"
+    day = "sensor.electricity_flow_day_eur_grid_to_home"
+    month = "sensor.electricity_flow_month_eur_grid_to_home"
     state = hass.states.get(day)
     assert state.state == "0.0"
     assert state.attributes["unit_of_measurement"] == "EUR"
@@ -226,7 +225,7 @@ async def test_costs_per_quarter_day_and_month(
     assert attrs["last_quarter_price"] == 0.3
     assert attrs["price_entity"] == "sensor.price"
     # Solar to grid has a price but no energy this quarter
-    assert _val(hass, "sensor.ef_price_solar_grid_day") == 0
+    assert _val(hass, "sensor.electricity_flow_day_eur_solar_to_grid") == 0
 
     # Quarter 23:45: 2 kWh at 0.50. It ends at midnight but belongs to the old
     # day and month, after which both start again at 0.
@@ -244,7 +243,7 @@ async def test_costs_per_quarter_day_and_month(
     _sources(hass, 103, 52, 5)
     await hass.async_block_till_done()
     await _goto(hass, freezer, _local(2026, 12, 1, 0, 15, 0))
-    assert _val(hass, "sensor.ef_price_solar_grid_day") == 0.001
+    assert _val(hass, "sensor.electricity_flow_day_eur_solar_to_grid") == 0.001
     assert _val(hass, day) == 0
 
 
@@ -261,7 +260,7 @@ async def test_unavailable_price_uses_last_known(
     await hass.async_block_till_done()
     await _goto(hass, freezer, _local(2026, 11, 21, 14, 15, 0))
     # The price was 0.40 for 0 seconds, so the last valid price is used
-    assert _val(hass, "sensor.ef_price_grid_home_day") == 0.2
+    assert _val(hass, "sensor.electricity_flow_day_eur_grid_to_home") == 0.2
 
 
 async def test_restore_totals(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
@@ -272,11 +271,15 @@ async def test_restore_totals(hass: HomeAssistant, freezer: FrozenDateTimeFactor
         hass,
         [
             (
-                State("sensor.ef_price_grid_home_day", "1.5", {"last_reset": today}),
+                State("sensor.electricity_flow_day_eur_grid_to_home", "1.5", {"last_reset": today}),
                 {"native_value": 1.5, "native_unit_of_measurement": "EUR"},
             ),
             (
-                State("sensor.ef_price_grid_home_month", "40.0", {"last_reset": last_month}),
+                State(
+                    "sensor.electricity_flow_month_eur_grid_to_home",
+                    "40.0",
+                    {"last_reset": last_month},
+                ),
                 {"native_value": 40.0, "native_unit_of_measurement": "EUR"},
             ),
         ],
@@ -286,58 +289,11 @@ async def test_restore_totals(hass: HomeAssistant, freezer: FrozenDateTimeFactor
     await _setup(hass, options={**CONFIG, "price_grid_to_home": "sensor.price"})
 
     # Same day: continue counting. Month total is from an old month: start at 0
-    assert _val(hass, "sensor.ef_price_grid_home_day") == 1.5
-    assert _val(hass, "sensor.ef_price_grid_home_month") == 0
+    assert _val(hass, "sensor.electricity_flow_day_eur_grid_to_home") == 1.5
+    assert _val(hass, "sensor.electricity_flow_month_eur_grid_to_home") == 0
 
     _sources(hass, 101, 50, 3)
     await hass.async_block_till_done()
     await _goto(hass, freezer, _local(2026, 11, 21, 14, 15, 0))
-    assert _val(hass, "sensor.ef_price_grid_home_day") == 1.7
-    assert _val(hass, "sensor.ef_price_grid_home_month") == 0.2
-
-
-async def test_migrate_old_entity_ids(
-    hass: HomeAssistant, freezer: FrozenDateTimeFactory
-) -> None:
-    """sensor.ef_cost_* of older versions becomes sensor.ef_price_*, keeping the total."""
-    freezer.move_to(dt_util.as_utc(_local(2026, 11, 21, 14, 5, 0)))
-    today = _local(2026, 11, 21).isoformat()
-    entry = MockConfigEntry(
-        domain=DOMAIN, data=CONFIG, options={**CONFIG, "price_grid_to_home": "sensor.price"}
-    )
-    entry.add_to_hass(hass)
-    registry = er.async_get(hass)
-    registry.async_get_or_create(
-        "sensor",
-        DOMAIN,
-        f"{entry.entry_id}_grid_to_home_cost_day",
-        suggested_object_id="ef_cost_grid_home_day",
-        config_entry=entry,
-    )
-    # A user defined entity id is left alone
-    registry.async_get_or_create(
-        "sensor",
-        DOMAIN,
-        f"{entry.entry_id}_grid_to_home_cost_month",
-        suggested_object_id="my_grid_cost_month",
-        config_entry=entry,
-    )
-    mock_restore_cache_with_extra_data(
-        hass,
-        [
-            (
-                State("sensor.ef_cost_grid_home_day", "1.5", {"last_reset": today}),
-                {"native_value": 1.5, "native_unit_of_measurement": "EUR"},
-            ),
-        ],
-    )
-    _sources(hass, 100, 50, 3)
-    hass.states.async_set("sensor.price", 0.20, PRICE)
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    assert registry.async_get("sensor.ef_cost_grid_home_day") is None
-    state = hass.states.get("sensor.ef_price_grid_home_day")
-    assert float(state.state) == 1.5
-    assert state.attributes["friendly_name"] == "Electricity Flow Day € – Grid to home"
-    assert hass.states.get("sensor.my_grid_cost_month") is not None
+    assert _val(hass, "sensor.electricity_flow_day_eur_grid_to_home") == 1.7
+    assert _val(hass, "sensor.electricity_flow_month_eur_grid_to_home") == 0.2

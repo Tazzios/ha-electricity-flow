@@ -51,9 +51,13 @@ See the wiki for
 ## Development
 
 ```bash
-pip install pytest-homeassistant-custom-component
+pip install -r requirements_test.txt ruff
 pytest
+ruff check . && ruff format --check .
+mypy
 ```
+
+GitHub Actions run the same checks plus hassfest and the HACS validation.
 
 ## License
 

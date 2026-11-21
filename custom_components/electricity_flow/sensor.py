@@ -11,12 +11,11 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
-    SensorExtraStoredData,
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory, UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er, restore_state
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
@@ -32,14 +31,10 @@ class ElectricityFlowSensorDescription(SensorEntityDescription):
     """Describes an Electricity Flow sensor."""
 
     value_fn: Callable[[ElectricityFlowEngine], float]
-    # Entity id used by the old package, so history and other configuration
-    # (like dynamic_energy_cost) keep working after the switch.
-    object_id: str
 
 
 def _period_sensor(
     key: str,
-    object_id: str,
     value_fn: Callable[[ElectricityFlowEngine], float],
     *,
     diagnostic: bool = False,
@@ -47,7 +42,6 @@ def _period_sensor(
     return ElectricityFlowSensorDescription(
         key=key,
         translation_key=key,
-        object_id=object_id,
         value_fn=value_fn,
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -59,55 +53,41 @@ def _period_sensor(
 
 # Calculated flows (the "EF Output ..." sensors of the package)
 OUTPUT_SENSORS: tuple[ElectricityFlowSensorDescription, ...] = (
-    _period_sensor("house", "ef_output_house_kwh", lambda e: e.result.house),
-    _period_sensor("solar_to_home", "ef_output_solar_home_kwh", lambda e: e.result.solar_to_home),
-    _period_sensor(
-        "solar_to_battery", "ef_output_solar_battery_kwh", lambda e: e.result.solar_to_battery
-    ),
-    _period_sensor("solar_to_grid", "ef_output_solar_grid_kwh", lambda e: e.result.solar_to_grid),
-    _period_sensor("grid_to_home", "ef_output_grid_home_kwh", lambda e: e.result.grid_to_home),
-    _period_sensor(
-        "grid_to_battery", "ef_output_grid_battery_kwh", lambda e: e.result.grid_to_battery
-    ),
-    _period_sensor(
-        "battery_to_home", "ef_output_battery_home_kwh", lambda e: e.result.battery_to_home
-    ),
-    _period_sensor(
-        "battery_to_grid", "ef_output_battery_grid_kwh", lambda e: e.result.battery_to_grid
-    ),
+    _period_sensor("house", lambda e: e.result.house),
+    _period_sensor("solar_to_home", lambda e: e.result.solar_to_home),
+    _period_sensor("solar_to_battery", lambda e: e.result.solar_to_battery),
+    _period_sensor("solar_to_grid", lambda e: e.result.solar_to_grid),
+    _period_sensor("grid_to_home", lambda e: e.result.grid_to_home),
+    _period_sensor("grid_to_battery", lambda e: e.result.grid_to_battery),
+    _period_sensor("battery_to_home", lambda e: e.result.battery_to_home),
+    _period_sensor("battery_to_grid", lambda e: e.result.battery_to_grid),
 )
 
 # Measured energy in the current period (replaces the utility meters).
 # Diagnostic and without state class, so they do not create extra statistics.
 INPUT_SENSORS: tuple[ElectricityFlowSensorDescription, ...] = (
-    _period_sensor(
-        "input_solar", "ef_input_solar_kwh_quarter", lambda e: e.period_input.solar, diagnostic=True
-    ),
+    _period_sensor("input_solar", lambda e: e.period_input.solar, diagnostic=True),
     _period_sensor(
         "input_battery_charge",
-        "ef_input_battery_charge_kwh_quarter",
         lambda e: e.period_input.battery_charge,
         diagnostic=True,
     ),
     _period_sensor(
         "input_battery_discharge",
-        "ef_input_battery_discharge_kwh_quarter",
         lambda e: e.period_input.battery_discharge,
         diagnostic=True,
     ),
     _period_sensor(
         "input_grid_import",
-        "ef_input_grid_import_kwh_quarter",
         lambda e: e.period_input.grid_import,
         diagnostic=True,
     ),
     _period_sensor(
         "input_grid_export",
-        "ef_input_grid_export_kwh_quarter",
         lambda e: e.period_input.grid_export,
         diagnostic=True,
     ),
-    _period_sensor("grid_net", "ef_grid_kwh_quarter", lambda e: e.result.grid_net, diagnostic=True),
+    _period_sensor("grid_net", lambda e: e.result.grid_net, diagnostic=True),
 )
 
 
@@ -131,11 +111,10 @@ async def async_setup_entry(
     for description in OUTPUT_SENSORS:
         for period in (PERIOD_DAY, PERIOD_MONTH):
             sensor = ElectricityFlowCostSensor(engine, entry, description, period, currency)
-            _migrate_entity_id(registry, sensor)
             if description.key in engine.prices:
                 cost_sensors.append(sensor)
             elif entity_id := registry.async_get_entity_id(
-                "sensor", DOMAIN, sensor.unique_id
+                "sensor", DOMAIN, sensor.unique_id or ""
             ):
                 registry.async_remove(entity_id)
     async_add_entities(cost_sensors)
@@ -158,8 +137,6 @@ class ElectricityFlowSensor(SensorEntity):
         self._engine = engine
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        # Only used the first time the entity is registered
-        self.entity_id = f"sensor.{description.object_id}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="Electricity Flow",
@@ -173,7 +150,8 @@ class ElectricityFlowSensor(SensorEntity):
     @property
     def native_value(self) -> float:
         """Return the energy of the current period."""
-        return self.entity_description.value_fn(self._engine)
+        # Rounded: summed meter deltas carry float noise (0.700000000000728)
+        return round(self.entity_description.value_fn(self._engine), OUTPUT_PRECISION) + 0.0
 
     @property
     def last_reset(self) -> datetime | None:
@@ -203,6 +181,10 @@ class ElectricityFlowCostSensor(RestoreSensor):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.TOTAL
     _attr_suggested_display_precision = 2
+    # Change every quarter: keep them out of the recorder database
+    _unrecorded_attributes = frozenset(
+        {"last_quarter_start", "last_quarter_kwh", "last_quarter_price", "last_quarter_cost"}
+    )
 
     def __init__(
         self,
@@ -220,11 +202,6 @@ class ElectricityFlowCostSensor(RestoreSensor):
         self._attr_translation_key = f"{output.key}_cost_{period}"
         self._attr_translation_placeholders = {"currency": currency}
         self._attr_unique_id = f"{entry.entry_id}_{output.key}_cost_{period}"
-        flow = output.object_id.removeprefix("ef_output_").removesuffix("_kwh")
-        # Only used the first time the entity is registered
-        self.entity_id = f"sensor.ef_price_{flow}_{period}"
-        # Entity id of versions before 0.6.0 (see _migrate_entity_id)
-        self.legacy_entity_id = f"sensor.ef_cost_{flow}_{period}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="Electricity Flow",
@@ -239,17 +216,8 @@ class ElectricityFlowCostSensor(RestoreSensor):
         self._attr_native_unit_of_measurement = self.hass.config.currency
         last_state = await self.async_get_last_state()
         last_data = await self.async_get_last_sensor_data()
-        if last_state is None or last_data is None:
-            # Renamed from the old entity id: the restore data is stored
-            # under the old id until the next shutdown.
-            stored = restore_state.async_get(self.hass).last_states.get(self.legacy_entity_id)
-            if stored is not None and stored.extra_data is not None:
-                last_state = stored.state
-                last_data = SensorExtraStoredData.from_dict(stored.extra_data.as_dict())
         if last_state is not None and last_data is not None:
-            restored_reset = dt_util.parse_datetime(
-                str(last_state.attributes.get("last_reset"))
-            )
+            restored_reset = dt_util.parse_datetime(str(last_state.attributes.get("last_reset")))
             if (
                 restored_reset is not None
                 and dt_util.as_local(restored_reset) == self._last_reset
@@ -320,19 +288,3 @@ _CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "INR": 
 def currency_symbol(currency: str) -> str:
     """Return the sign of a currency code (or the code itself)."""
     return _CURRENCY_SYMBOLS.get(currency, currency)
-
-
-@callback
-def _migrate_entity_id(registry: er.EntityRegistry, sensor: ElectricityFlowCostSensor) -> None:
-    """Rename sensor.ef_cost_* (before 0.6.0) to sensor.ef_price_*.
-
-    Only when the user did not change the entity id. History and long term
-    statistics move along with the entity id.
-    """
-    old = registry.async_get_entity_id("sensor", DOMAIN, sensor.unique_id or "")
-    if (
-        old == sensor.legacy_entity_id
-        and sensor.entity_id
-        and registry.async_get(sensor.entity_id) is None
-    ):
-        registry.async_update_entity(old, new_entity_id=sensor.entity_id)
