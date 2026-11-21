@@ -38,10 +38,13 @@ monthly cost sensors. Everything can be changed later via **Configure**.
 
 Energy (kWh) per quarter for:
 
-- House consumption
-- Solar → home, solar → battery, solar → grid
-- Grid → home, grid → battery
-- Battery → home, battery → grid
+- Solar → home
+- solar → battery
+- solar → grid
+- Grid → home
+- grid → battery
+- Battery → home
+- battery → grid
 
 With prices set, every flow also gets a cost sensor for today and one for this month.
 See the wiki for
