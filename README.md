@@ -62,6 +62,9 @@ mypy
 
 GitHub Actions run the same checks plus hassfest and the HACS validation.
 
+To release: raise `version` in `manifest.json`, then push a tag `v<version>`;
+the Release workflow creates the GitHub release that HACS shows.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
