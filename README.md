@@ -122,3 +122,7 @@ How it is calculated:
 pip install pytest-homeassistant-custom-component
 pytest
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
