@@ -1,0 +1,295 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Electricity Flow is al ingesteld."
+    },
+    "error": {
+      "invalid_price_unit": "Deze entiteit is geen prijs per kWh (bijvoorbeeld EUR/kWh).",
+      "invalid_template": "Deze template is niet geldig.",
+      "invalid_unit": "Deze sensor is geen energiesensor in Wh, kWh of MWh.",
+      "price_and_template": "Kies een prijs-entiteit of een template, niet allebei.",
+      "same_grid_sensor": "Afname en teruglevering moeten verschillende sensoren zijn.",
+      "template_not_number": "Deze template geeft geen getal."
+    },
+    "step": {
+      "battery": {
+        "description": "Kies de energiemeters van je batterijen en optioneel een prijs per stroom.",
+        "sections": {
+          "charge": {
+            "data": {
+              "battery_charge_sensors": "Batterij laad meters",
+              "price_grid_to_battery": "Net naar batterij",
+              "price_solar_to_battery": "Zon naar batterij",
+              "price_template_grid_to_battery": "via template (optioneel)",
+              "price_template_solar_to_battery": "via template (optioneel)"
+            },
+            "data_description": {
+              "battery_charge_sensors": "Een of meer energiesensoren met de geladen energie van je batterijen.",
+              "price_grid_to_battery": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_solar_to_battery": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_template_grid_to_battery": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+              "price_template_solar_to_battery": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+            },
+            "name": "Laden"
+          },
+          "discharge": {
+            "data": {
+              "battery_discharge_sensors": "Batterij ontlaad meters",
+              "price_battery_to_grid": "Batterij naar net",
+              "price_battery_to_home": "Batterij naar huis",
+              "price_template_battery_to_grid": "via template (optioneel)",
+              "price_template_battery_to_home": "via template (optioneel)"
+            },
+            "data_description": {
+              "battery_discharge_sensors": "Een of meer energiesensoren met de ontladen energie van je batterijen.",
+              "price_battery_to_grid": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_battery_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_template_battery_to_grid": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+              "price_template_battery_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+            },
+            "name": "Ontladen"
+          }
+        },
+        "title": "Batterij"
+      },
+      "grid": {
+        "data": {
+          "grid_export_sensor": "Netteruglevering meter",
+          "grid_import_sensor": "Netafname meter"
+        },
+        "data_description": {
+          "grid_export_sensor": "Oplopende energiesensor van de stroom die je teruglevert aan het net.",
+          "grid_import_sensor": "Oplopende energiesensor van de stroom die je van het net haalt, bijvoorbeeld het totale verbruik van de P1-meter."
+        },
+        "description": "Kies de oplopende meters van je netaansluiting (Wh, kWh of MWh), bijvoorbeeld van de P1-meter.",
+        "title": "Net"
+      },
+      "house": {
+        "data": {
+          "price_grid_to_home": "Net naar huis",
+          "price_house": "Huis",
+          "price_template_grid_to_home": "via template (optioneel)",
+          "price_template_house": "via template (optioneel)"
+        },
+        "data_description": {
+          "price_grid_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_house": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_template_grid_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "price_template_house": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+        },
+        "description": "Prijzen voor het huisverbruik.",
+        "title": "Huis"
+      },
+      "solar": {
+        "data": {
+          "price_solar_to_grid": "Zon naar net",
+          "price_solar_to_home": "Zon naar huis",
+          "price_template_solar_to_grid": "via template (optioneel)",
+          "price_template_solar_to_home": "via template (optioneel)",
+          "solar_sensors": "Zonne-opbrengst meters"
+        },
+        "data_description": {
+          "price_solar_to_grid": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_solar_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_template_solar_to_grid": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "price_template_solar_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "solar_sensors": "Een of meer energiesensoren van je omvormers. Een dagteller mag ook."
+        },
+        "description": "Kies de energiemeters van je omvormers en optioneel per zonnestroom een prijs.",
+        "title": "Zon"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery_to_grid": {
+        "name": "kWh kwartier – Batterij naar net"
+      },
+      "battery_to_grid_cost_day": {
+        "name": "Dag {currency} – Batterij naar net"
+      },
+      "battery_to_grid_cost_month": {
+        "name": "Maand {currency} – Batterij naar net"
+      },
+      "battery_to_home": {
+        "name": "kWh kwartier – Batterij naar huis"
+      },
+      "battery_to_home_cost_day": {
+        "name": "Dag {currency} – Batterij naar huis"
+      },
+      "battery_to_home_cost_month": {
+        "name": "Maand {currency} – Batterij naar huis"
+      },
+      "grid_net": {
+        "name": "Invoer kwartier – Net saldo"
+      },
+      "grid_to_battery": {
+        "name": "kWh kwartier – Net naar batterij"
+      },
+      "grid_to_battery_cost_day": {
+        "name": "Dag {currency} – Net naar batterij"
+      },
+      "grid_to_battery_cost_month": {
+        "name": "Maand {currency} – Net naar batterij"
+      },
+      "grid_to_home": {
+        "name": "kWh kwartier – Net naar huis"
+      },
+      "grid_to_home_cost_day": {
+        "name": "Dag {currency} – Net naar huis"
+      },
+      "grid_to_home_cost_month": {
+        "name": "Maand {currency} – Net naar huis"
+      },
+      "house": {
+        "name": "kWh kwartier – Huis"
+      },
+      "house_cost_day": {
+        "name": "Dag {currency} – Huis"
+      },
+      "house_cost_month": {
+        "name": "Maand {currency} – Huis"
+      },
+      "input_battery_charge": {
+        "name": "Invoer kwartier – Batterij geladen"
+      },
+      "input_battery_discharge": {
+        "name": "Invoer kwartier – Batterij ontladen"
+      },
+      "input_grid_export": {
+        "name": "Invoer kwartier – Teruglevering"
+      },
+      "input_grid_import": {
+        "name": "Invoer kwartier – Netafname"
+      },
+      "input_solar": {
+        "name": "Invoer kwartier – Zon"
+      },
+      "solar_to_battery": {
+        "name": "kWh kwartier – Zon naar batterij"
+      },
+      "solar_to_battery_cost_day": {
+        "name": "Dag {currency} – Zon naar batterij"
+      },
+      "solar_to_battery_cost_month": {
+        "name": "Maand {currency} – Zon naar batterij"
+      },
+      "solar_to_grid": {
+        "name": "kWh kwartier – Zon naar net"
+      },
+      "solar_to_grid_cost_day": {
+        "name": "Dag {currency} – Zon naar net"
+      },
+      "solar_to_grid_cost_month": {
+        "name": "Maand {currency} – Zon naar net"
+      },
+      "solar_to_home": {
+        "name": "kWh kwartier – Zon naar huis"
+      },
+      "solar_to_home_cost_day": {
+        "name": "Dag {currency} – Zon naar huis"
+      },
+      "solar_to_home_cost_month": {
+        "name": "Maand {currency} – Zon naar huis"
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "invalid_price_unit": "Deze entiteit is geen prijs per kWh (bijvoorbeeld EUR/kWh).",
+      "invalid_template": "Deze template is niet geldig.",
+      "invalid_unit": "Deze sensor is geen energiesensor in Wh, kWh of MWh.",
+      "price_and_template": "Kies een prijs-entiteit of een template, niet allebei.",
+      "same_grid_sensor": "Afname en teruglevering moeten verschillende sensoren zijn.",
+      "template_not_number": "Deze template geeft geen getal."
+    },
+    "step": {
+      "battery": {
+        "description": "Kies de energiemeters van je batterijen en optioneel een prijs per stroom.",
+        "sections": {
+          "charge": {
+            "data": {
+              "battery_charge_sensors": "Batterij laad meters",
+              "price_grid_to_battery": "Net naar batterij",
+              "price_solar_to_battery": "Zon naar batterij",
+              "price_template_grid_to_battery": "via template (optioneel)",
+              "price_template_solar_to_battery": "via template (optioneel)"
+            },
+            "data_description": {
+              "battery_charge_sensors": "Een of meer energiesensoren met de geladen energie van je batterijen.",
+              "price_grid_to_battery": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_solar_to_battery": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_template_grid_to_battery": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+              "price_template_solar_to_battery": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+            },
+            "name": "Laden"
+          },
+          "discharge": {
+            "data": {
+              "battery_discharge_sensors": "Batterij ontlaad meters",
+              "price_battery_to_grid": "Batterij naar net",
+              "price_battery_to_home": "Batterij naar huis",
+              "price_template_battery_to_grid": "via template (optioneel)",
+              "price_template_battery_to_home": "via template (optioneel)"
+            },
+            "data_description": {
+              "battery_discharge_sensors": "Een of meer energiesensoren met de ontladen energie van je batterijen.",
+              "price_battery_to_grid": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_battery_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+              "price_template_battery_to_grid": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+              "price_template_battery_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+            },
+            "name": "Ontladen"
+          }
+        },
+        "title": "Batterij"
+      },
+      "grid": {
+        "data": {
+          "grid_export_sensor": "Netteruglevering meter",
+          "grid_import_sensor": "Netafname meter"
+        },
+        "data_description": {
+          "grid_export_sensor": "Oplopende energiesensor van de stroom die je teruglevert aan het net.",
+          "grid_import_sensor": "Oplopende energiesensor van de stroom die je van het net haalt, bijvoorbeeld het totale verbruik van de P1-meter."
+        },
+        "description": "Kies de oplopende meters van je netaansluiting (Wh, kWh of MWh), bijvoorbeeld van de P1-meter.",
+        "title": "Net"
+      },
+      "house": {
+        "data": {
+          "price_grid_to_home": "Net naar huis",
+          "price_house": "Huis",
+          "price_template_grid_to_home": "via template (optioneel)",
+          "price_template_house": "via template (optioneel)"
+        },
+        "data_description": {
+          "price_grid_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_house": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_template_grid_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "price_template_house": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh."
+        },
+        "description": "Prijzen voor het huisverbruik.",
+        "title": "Huis"
+      },
+      "solar": {
+        "data": {
+          "price_solar_to_grid": "Zon naar net",
+          "price_solar_to_home": "Zon naar huis",
+          "price_template_solar_to_grid": "via template (optioneel)",
+          "price_template_solar_to_home": "via template (optioneel)",
+          "solar_sensors": "Zonne-opbrengst meters"
+        },
+        "data_description": {
+          "price_solar_to_grid": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_solar_to_home": "Sensor of nummer met de prijs per kWh (€/kWh, €/MWh en cent/kWh worden omgerekend). Laat leeg voor geen kostensensoren voor deze stroom.",
+          "price_template_solar_to_grid": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "price_template_solar_to_home": "Optioneel, in plaats van een prijs-entiteit. Handig om bijvoorbeeld opslag of energiebelasting op te tellen. De template moet een getal geven in € per kWh.",
+          "solar_sensors": "Een of meer energiesensoren van je omvormers. Een dagteller mag ook."
+        },
+        "description": "Kies de energiemeters van je omvormers en optioneel per zonnestroom een prijs.",
+        "title": "Zon"
+      }
+    }
+  }
+}

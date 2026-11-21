@@ -1,0 +1,14 @@
+{
+  "domain": "electricity_flow",
+  "name": "Electricity Flow",
+  "codeowners": ["@Tazzios"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Tazzios/ha-electricity-flow",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Tazzios/ha-electricity-flow/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.6.0"
+}
