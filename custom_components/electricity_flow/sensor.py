@@ -23,7 +23,8 @@ from homeassistant.util import dt as dt_util
 from . import ElectricityFlowConfigEntry
 from .const import DOMAIN, OUTPUT_PRECISION
 from .cost import QuarterBooking, day_start, month_start
-from .engine import TEMPLATE_PREFIX, ElectricityFlowEngine
+from .engine import ElectricityFlowEngine
+from .issues import TEMPLATE_PREFIX
 
 
 @dataclass(frozen=True, kw_only=True)

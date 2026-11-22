@@ -291,5 +291,31 @@
         "title": "Solar"
       }
     }
+  },
+  "issues": {
+    "duplicate_source": {
+      "title": "Sensor {entity} is selected more than once",
+      "description": "The sensor {entity} is selected as more than one meter ({roles}). Its energy is then counted twice and the flows are wrong.\n\nGo to **Settings → Devices & services → Electricity Flow → Configure** and select it only once."
+    },
+    "source_unavailable": {
+      "title": "Meter {entity} is unavailable",
+      "description": "The energy meter {entity} has been missing, unavailable or not a number for more than an hour. Until it is back the flows are incomplete.\n\nCheck the integration that provides this sensor, or select another meter via **Settings → Devices & services → Electricity Flow → Configure**. This message disappears by itself when the meter works again."
+    },
+    "source_invalid_unit": {
+      "title": "Meter {entity} has an unsupported unit",
+      "description": "The energy meter {entity} reports in {unit}, but Electricity Flow needs Wh, kWh or MWh. Its energy is not counted.\n\nSelect an energy meter (not a power sensor in W) via **Settings → Devices & services → Electricity Flow → Configure**."
+    },
+    "price_unavailable": {
+      "title": "No price from {entity}",
+      "description": "The price from {entity} has been unavailable or not a number for more than an hour. Costs are calculated with the last valid price meanwhile, or not at all if there never was one.\n\nCheck the price sensor or template via **Settings → Devices & services → Electricity Flow → Configure**. This message disappears by itself when a valid price is back."
+    },
+    "price_invalid_unit": {
+      "title": "Price {entity} has an unsupported unit",
+      "description": "The price entity {entity} has the unit {unit}, which is not a price per energy. Use a price in for example EUR/kWh, ct/kWh or EUR/MWh. No costs are calculated with this price.\n\nChange it via **Settings → Devices & services → Electricity Flow → Configure**."
+    },
+    "price_currency": {
+      "title": "Price {entity} is in another currency",
+      "description": "The price entity {entity} is in {currency}, but Home Assistant uses {expected}. Electricity Flow does not convert currencies, so the cost sensors would show the wrong amount.\n\nUse a price in {expected}, or change the currency in **Settings → System → General**."
+    }
   }
 }

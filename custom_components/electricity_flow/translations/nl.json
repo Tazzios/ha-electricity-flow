@@ -291,5 +291,31 @@
         "title": "Zon"
       }
     }
+  },
+  "issues": {
+    "duplicate_source": {
+      "title": "Sensor {entity} is meer dan één keer gekozen",
+      "description": "De sensor {entity} is gekozen als meer dan één meter ({roles}). De energie wordt dan dubbel geteld en de stromen kloppen niet.\n\nGa naar **Instellingen → Apparaten en diensten → Electricity Flow → Configureren** en kies hem maar één keer."
+    },
+    "source_unavailable": {
+      "title": "Meter {entity} is niet beschikbaar",
+      "description": "De energiemeter {entity} ontbreekt, is niet beschikbaar of geeft geen getal, en dat al langer dan een uur. Tot hij terug is kloppen de stromen niet volledig.\n\nControleer de integratie die deze sensor levert, of kies een andere meter via **Instellingen → Apparaten en diensten → Electricity Flow → Configureren**. Deze melding verdwijnt vanzelf zodra de meter weer werkt."
+    },
+    "source_invalid_unit": {
+      "title": "Meter {entity} heeft een verkeerde eenheid",
+      "description": "De energiemeter {entity} meet in {unit}, maar Electricity Flow heeft Wh, kWh of MWh nodig. De energie wordt niet geteld.\n\nKies een energiemeter (geen vermogenssensor in W) via **Instellingen → Apparaten en diensten → Electricity Flow → Configureren**."
+    },
+    "price_unavailable": {
+      "title": "Geen prijs van {entity}",
+      "description": "De prijs van {entity} is al langer dan een uur niet beschikbaar of geen getal. De kosten worden intussen berekend met de laatste geldige prijs, of helemaal niet als die er nooit was.\n\nControleer de prijssensor of template via **Instellingen → Apparaten en diensten → Electricity Flow → Configureren**. Deze melding verdwijnt vanzelf zodra er weer een geldige prijs is."
+    },
+    "price_invalid_unit": {
+      "title": "Prijs {entity} heeft een verkeerde eenheid",
+      "description": "De prijsentiteit {entity} heeft de eenheid {unit}, en dat is geen prijs per energie. Gebruik een prijs in bijvoorbeeld EUR/kWh, ct/kWh of EUR/MWh. Met deze prijs worden geen kosten berekend.\n\nPas het aan via **Instellingen → Apparaten en diensten → Electricity Flow → Configureren**."
+    },
+    "price_currency": {
+      "title": "Prijs {entity} is in een andere valuta",
+      "description": "De prijsentiteit {entity} is in {currency}, maar Home Assistant gebruikt {expected}. Electricity Flow rekent geen valuta om, dus de kostensensoren zouden een verkeerd bedrag tonen.\n\nGebruik een prijs in {expected}, of verander de valuta in **Instellingen → Systeem → Algemeen**."
+    }
   }
 }

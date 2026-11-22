@@ -47,6 +47,10 @@ Energy (kWh) per quarter for:
 - battery → grid
 
 With prices set, every flow also gets a cost sensor for today and one for this month.
+
+Problems with the selected sensors (missing or unavailable for over an hour, wrong unit,
+price in another currency, one sensor selected twice) show up under
+**Settings → System → Repairs** and clear by themselves once fixed.
 See the wiki for
 [all sensors](https://github.com/Tazzios/ha-electricity-flow/wiki/Sensors) and
 [how costs are calculated](https://github.com/Tazzios/ha-electricity-flow/wiki/Cost-calculation).

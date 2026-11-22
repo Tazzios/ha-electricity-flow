@@ -55,7 +55,8 @@ from .const import (
     price_option,
     price_template_option,
 )
-from .cost import PriceAverager, QuarterBooking, QuarterCost, price_factor
+from .cost import PriceAverager, QuarterBooking, QuarterCost, price_currency, price_factor
+from .issues import TEMPLATE_PREFIX, IssueTracker, price_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -119,9 +120,6 @@ def state_to_kwh(state: State | None) -> float | None:
         )
         return None
     return value * factor
-
-
-TEMPLATE_PREFIX = "template:"
 
 
 def prices_from_config(config: dict[str, Any]) -> dict[str, str]:
@@ -204,6 +202,7 @@ class ElectricityFlowEngine:
         self._listeners: list[Callable[[], None]] = []
         self._booking_listeners: list[Callable[[QuarterBooking], None]] = []
         self._store: Store[dict[str, Any]] = create_store(hass, entry.entry_id)
+        self.issues = IssueTracker(hass)
 
     @property
     def entity_ids(self) -> list[str]:
@@ -220,6 +219,7 @@ class ElectricityFlowEngine:
         """Restore state, take the first readings and start listening."""
         await self._async_restore()
 
+        self.issues.check_duplicates(self.sources)
         for entity_id in self.entity_ids:
             self._process_state(entity_id, self.hass.states.get(entity_id))
         self._recalculate()
@@ -227,7 +227,9 @@ class ElectricityFlowEngine:
         now = dt_util.now()
         price_entities = [s for s in self._price_avg if not s.startswith(TEMPLATE_PREFIX)]
         for entity_id in price_entities:
-            self._price_avg[entity_id].update(state_to_price(self.hass.states.get(entity_id)), now)
+            state = self.hass.states.get(entity_id)
+            self._check_price_entity(entity_id, state)
+            self._price_avg[entity_id].update(state_to_price(state), now)
 
         self.entry.async_on_unload(
             async_track_state_change_event(self.hass, self.entity_ids, self._handle_source_change)
@@ -339,6 +341,7 @@ class ElectricityFlowEngine:
     @callback
     def _handle_new_period(self, now: datetime) -> None:
         """Reset all period counters at hh:00, hh:15, hh:30 and hh:45."""
+        self.issues.check_unusable(now)
         if period_start(now) == self.period_start:
             return
         self._start_new_period(now)
@@ -356,6 +359,7 @@ class ElectricityFlowEngine:
             updates: list[TrackTemplateResult],
         ) -> None:
             price = template_result_to_price(updates[-1].result)
+            self.issues.usable(price_key(source), price is not None, dt_util.now())
             if price is None:
                 _LOGGER.warning(
                     "Price template %s did not give a number: %s",
@@ -373,7 +377,20 @@ class ElectricityFlowEngine:
     @callback
     def _handle_price_change(self, event: Event[EventStateChangedData]) -> None:
         """Track a new value of a price entity for the average of the quarter."""
-        self._price_update(event.data["entity_id"], state_to_price(event.data["new_state"]))
+        entity_id = event.data["entity_id"]
+        self._check_price_entity(entity_id, event.data["new_state"])
+        self._price_update(entity_id, state_to_price(event.data["new_state"]))
+
+    @callback
+    def _check_price_entity(self, entity_id: str, state: State | None) -> None:
+        """Update the repair issues of a price entity."""
+        unit = None if state is None else state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
+        bad_unit = state is not None and price_factor(unit) is None
+        self.issues.price_unit(entity_id, unit if bad_unit else None)
+        self.issues.price_currency(entity_id, None if bad_unit else price_currency(unit))
+        # A wrong unit has its own issue, so it does not count as unavailable
+        usable = bad_unit or state_to_price(state) is not None
+        self.issues.usable(price_key(entity_id), usable, dt_util.now())
 
     @callback
     def _price_update(self, source: str, price: float | None) -> None:
@@ -422,11 +439,30 @@ class ElectricityFlowEngine:
     @callback
     def _process_state(self, entity_id: str, state: State | None) -> None:
         """Process a new state of a source meter."""
+        self._check_source(entity_id, state)
         value = state_to_kwh(state)
         if state is None or value is None:
             return
         last_reset = state.attributes.get(ATTR_LAST_RESET)
         self._process_value(entity_id, value, None if last_reset is None else str(last_reset))
+
+    @callback
+    def _check_source(self, entity_id: str, state: State | None) -> None:
+        """Update the repair issues of a source meter."""
+        usable = False
+        bad_unit = None
+        if state is not None and state.state not in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            try:
+                float(state.state)
+            except ValueError:
+                pass
+            else:
+                usable = True
+                unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
+                if unit is not None and unit not in UNIT_TO_KWH:
+                    bad_unit = str(unit)
+        self.issues.source_unit(entity_id, bad_unit)
+        self.issues.usable(entity_id, usable, dt_util.now())
 
     @callback
     def _process_value(self, entity_id: str, value: float, last_reset: str | None = None) -> None:

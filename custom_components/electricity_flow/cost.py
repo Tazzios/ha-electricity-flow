@@ -42,6 +42,26 @@ def price_factor(unit: str | None) -> float | None:
     return factor
 
 
+# Currency symbols that are written instead of the ISO code
+_CURRENCY_SYMBOLS = {"€": "EUR", "$": "USD", "£": "GBP"}
+
+
+def price_currency(unit: str | None) -> str | None:
+    """Return the ISO currency code of a price unit like "EUR/kWh".
+
+    Returns None when the currency can not be determined: no unit, cents
+    ("ct/kWh" could be any currency) or something that is not a currency code.
+    """
+    if unit is None or "/" not in unit:
+        return None
+    currency = unit.rsplit("/", 1)[0].strip()
+    if currency in _CURRENCY_SYMBOLS:
+        return _CURRENCY_SYMBOLS[currency]
+    if len(currency) == 3 and currency.isalpha() and currency.lower() not in _CENT_UNITS:
+        return currency.upper()
+    return None
+
+
 @dataclass(slots=True)
 class PriceAverager:
     """Time weighted average of a price during one quarter."""

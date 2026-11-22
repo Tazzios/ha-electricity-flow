@@ -7,6 +7,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .engine import ElectricityFlowEngine, create_store
+from .issues import async_delete_all_issues
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
@@ -30,12 +31,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ElectricityFlowConfigEn
     if unload_ok:
         # Write the current period now, so a reload continues from it
         await entry.runtime_data.async_save()
+        # The issues are checked again when the integration starts
+        entry.runtime_data.issues.async_clear_all()
     return unload_ok
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ElectricityFlowConfigEntry) -> None:
     """Remove the stored period state when the integration is removed."""
     await create_store(hass, entry.entry_id).async_remove()
+    async_delete_all_issues(hass)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ElectricityFlowConfigEntry) -> None:
