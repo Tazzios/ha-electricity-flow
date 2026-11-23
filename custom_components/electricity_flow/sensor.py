@@ -170,8 +170,9 @@ async def async_setup_entry(
             registry.async_remove(reg_entry.entity_id)
     # The main device of older versions is replaced by the house
     devices = dr.async_get(hass)
-    if (old := devices.async_get_device(identifiers={(DOMAIN, entry.entry_id)})) is not None:
-        devices.async_remove_device(old.id)
+    for old in dr.async_entries_for_config_entry(devices, entry.entry_id):
+        if (DOMAIN, entry.entry_id) in old.identifiers:
+            devices.async_remove_device(old.id)
 
     for group, subentry_id in groups:
         if subentry_id is None:

@@ -12,13 +12,16 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.electricity_flow.const import DOMAIN
 
+from .helpers import make_entry
+
 KWH = {"unit_of_measurement": "kWh"}
 CONFIG = {
     "grid_import_sensor": "sensor.p1_import",
     "grid_export_sensor": "sensor.p1_export",
     "solar_sensors": ["sensor.solar"],
 }
-SOLAR_INPUT = "sensor.electricity_flow_input_quarter_solar"
+# Nothing else happens, so all solar goes to home
+SOLAR_INPUT = "sensor.ef_solar_output_solar_home_kwh"
 
 
 def _val(hass: HomeAssistant, entity_id: str) -> float:
@@ -32,7 +35,7 @@ async def _setup(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> MockCon
     hass.states.async_set("sensor.p1_import", 100, KWH)
     hass.states.async_set("sensor.p1_export", 50, KWH)
     hass.states.async_set("sensor.solar", 12345, KWH)
-    entry = MockConfigEntry(domain=DOMAIN, data=CONFIG)
+    entry = make_entry(CONFIG)
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
