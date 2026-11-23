@@ -187,7 +187,8 @@ def _clean_prices(outputs: tuple[str, ...], values: dict[str, Any]) -> dict[str,
     return prices
 
 
-def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
+# Schemas are typed Any: newer HA expects probatio schemas, older HA voluptuous.
+def _settings_schema(defaults: dict[str, Any]) -> Any:
     """The settings of the integration: only the diagnostic sensors."""
     return vol.Schema(
         {
@@ -249,7 +250,7 @@ CONF_NAME = "name"
 GRID_TITLES = {"nl": "Net", "de": "Netz"}
 
 
-def _device_schema(hass: HomeAssistant, kind: str, defaults: dict[str, Any]) -> vol.Schema:
+def _device_schema(hass: HomeAssistant, kind: str, defaults: dict[str, Any]) -> Any:
     """Name (not for the grid), meters and the prices of the flows from this device."""
     fields: dict[Any, Any] = {}
     if kind == KIND_GRID:
