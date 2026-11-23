@@ -384,7 +384,12 @@ async def test_add_change_and_remove_device(hass: HomeAssistant) -> None:
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
     assert registry.async_get(entity_id).unique_id == unique_id
-    device = dr.async_get(hass).async_get_device({(DOMAIN, f"{entry.entry_id}_{battery_id}")})
+    identifier = (DOMAIN, f"{entry.entry_id}_{battery_id}")
+    device = next(
+        dev
+        for dev in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+        if identifier in dev.identifiers
+    )
     assert device.name == "Accu garage"
 
     # Remove the device: its device and sensors go, the totals stay
