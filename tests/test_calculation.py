@@ -1,6 +1,11 @@
 """Test the flow calculation against the template of the package."""
 
-from custom_components.electricity_flow.calculation import FlowInput, calculate_flow
+from custom_components.electricity_flow.calculation import (
+    FlowInput,
+    calculate_flow,
+    split_battery,
+    split_solar,
+)
 
 
 def test_example_from_design_document():
@@ -41,3 +46,40 @@ def test_import_and_export_are_netted():
     assert r.grid_net == 0.2
     assert r.house == 0.2
     assert r.grid_to_home == 0.2
+
+
+def test_split_solar_by_share_of_production() -> None:
+    data = FlowInput(solar=2.0, battery_charge=0.5, grid_export=0.5)
+    result = calculate_flow(data)
+    # East produced 1.5, west 0.5 (no meter without a set)
+    split = split_solar(data, result, {"east": 1.5, "west": 0.5})
+    assert split["east"] == {
+        "solar_to_home": 0.75,
+        "solar_to_battery": 0.375,
+        "solar_to_grid": 0.375,
+    }
+    assert split["west"] == {
+        "solar_to_home": 0.25,
+        "solar_to_battery": 0.125,
+        "solar_to_grid": 0.125,
+    }
+    for key in ("solar_to_home", "solar_to_battery", "solar_to_grid"):
+        assert split["east"][key] + split["west"][key] == getattr(result, key)
+
+
+def test_split_battery_charge_and_discharge_shares() -> None:
+    # One battery charges from the grid while the other discharges to the home
+    data = FlowInput(battery_charge=1.0, battery_discharge=0.4, grid_import=1.0)
+    result = calculate_flow(data)
+    split = split_battery(data, result, {"a": 1.0}, {"b": 0.4})
+    assert split["a"]["grid_to_battery"] == result.grid_to_battery == 1.0
+    assert split["a"]["battery_to_home"] == 0
+    assert split["b"]["battery_to_home"] == result.battery_to_home == 0.4
+    assert split["b"]["grid_to_battery"] == 0
+
+
+def test_split_without_energy_is_zero() -> None:
+    data = FlowInput()
+    result = calculate_flow(data)
+    assert split_solar(data, result, {"east": 0.0})["east"]["solar_to_home"] == 0
+    assert split_battery(data, result, {"a": 0.0}, {})["a"]["battery_to_grid"] == 0

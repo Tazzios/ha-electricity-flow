@@ -25,28 +25,42 @@ More explanation is in the [wiki](https://github.com/Tazzios/ha-electricity-flow
 
 ## Configuration
 
-Select your cumulative energy sensors (Wh, kWh or MWh):
+Setting up the integration only asks whether you want the diagnostic sensors (changed
+later via **Configure**). Then add your installation one device at a time with
+**Add device** on the integration page:
 
-- Grid import and grid export meter
-- Solar production meters (zero or more)
-- Battery charge and discharge meters (zero or more)
+- **Grid connection**: the grid import and export meter (once), and optionally the
+  prices of grid to home and grid to battery.
+- **Solar set**: a name, the energy meters of its inverters and optionally the prices of
+  solar to home, solar to grid and solar to battery.
+- **Battery**: a name, its charge and discharge meter and optionally the prices of
+  battery to home and battery to grid.
 
-Optionally set a price per flow (a price sensor or a template) to get daily and
-monthly cost sensors. Everything can be changed later via **Configure**.
+Every price is set at the source of the flow. Only energy sensors (Wh, kWh or MWh) can
+be selected as meter and only prices per energy (EUR/kWh, ct/kWh, ...) as price. Per
+quarter the flows are divided over the solar sets and batteries by each one's share of
+the production, charge or discharge, so the totals stay exactly the same. Change or
+remove a device with its menu on the integration page.
+
+An installation of version 0.8.0 or older is converted automatically: the grid meters
+become the grid, every solar meter a solar set and the battery meters one battery.
+Prices of older versions are removed: set them again on the devices.
 
 ## Sensors
 
-Energy (kWh) per quarter for:
+With prices set, every flow gets a cost sensor for today and one for this month, on the
+device it belongs to and as a total for the whole installation. The house costs are the
+sum of solar, grid and battery to home. Every device also gets a total for today and
+this month:
 
-- Solar → home
-- solar → battery
-- solar → grid
-- Grid → home
-- grid → battery
-- Battery → home
-- battery → grid
+- **Solar set**: the value of all it delivered (to home, grid and battery).
+- **Battery**: what it delivered (to home and grid) minus what charging it cost, at the
+  price of the solar set or grid the energy came from. It can go down.
+- **Grid**: what it delivered (to home and battery) minus the energy fed back (solar
+  and battery to grid, at their price). It can go down.
 
-With prices set, every flow also gets a cost sensor for today and one for this month.
+With **Diagnostic sensors** switched on, every flow also gets a sensor with its energy
+(kWh) in the current quarter, to check the calculation.
 
 Problems with the selected sensors (missing or unavailable for over an hour, wrong unit,
 price in another currency, one sensor selected twice) show up under
