@@ -88,3 +88,63 @@ def calculate_flow(data: FlowInput, precision: int = 3) -> FlowResult:
         grid_to_home=r(grid_to_home),
         grid_to_battery=r(grid_to_battery),
     )
+
+
+# Flows that are divided over the solar sets, by share of the production
+SOLAR_UNIT_FLOWS: tuple[str, ...] = ("solar_to_home", "solar_to_battery", "solar_to_grid")
+# Flows that are divided over the batteries, by share of the discharge
+BATTERY_DISCHARGE_FLOWS: tuple[str, ...] = ("battery_to_home", "battery_to_grid")
+# Flows that are divided over the batteries, by share of the charge
+BATTERY_CHARGE_FLOWS: tuple[str, ...] = ("solar_to_battery", "grid_to_battery")
+BATTERY_UNIT_FLOWS: tuple[str, ...] = BATTERY_DISCHARGE_FLOWS + BATTERY_CHARGE_FLOWS
+
+
+def _share(part: float, total: float) -> float:
+    return part / total if total > 0 else 0.0
+
+
+def split_solar(
+    data: FlowInput,
+    result: FlowResult,
+    production: dict[str, float],
+    precision: int = 3,
+) -> dict[str, dict[str, float]]:
+    """Divide the solar flows over the solar sets, by their share of the production.
+
+    production: unit id -> energy produced by that set in the period. The
+    share is taken of data.solar (all solar meters, also the ones that
+    are not part of a set), so the sets together never get more than the total.
+    """
+    total = data.solar
+    return {
+        unit: {
+            key: round(getattr(result, key) * _share(energy, total), precision) + 0.0
+            for key in SOLAR_UNIT_FLOWS
+        }
+        for unit, energy in production.items()
+    }
+
+
+def split_battery(
+    data: FlowInput,
+    result: FlowResult,
+    charge: dict[str, float],
+    discharge: dict[str, float],
+    precision: int = 3,
+) -> dict[str, dict[str, float]]:
+    """Divide the battery flows over the batteries.
+
+    Discharge flows go by share of the discharged energy, charge flows by share
+    of the charged energy (unit id -> energy in the period). The shares are
+    taken of the totals in data, which include meters without a battery name.
+    """
+    total_charge = data.battery_charge
+    total_discharge = data.battery_discharge
+    split: dict[str, dict[str, float]] = {}
+    for unit in {**charge, **discharge}:
+        discharge_share = _share(discharge.get(unit, 0.0), total_discharge)
+        charge_share = _share(charge.get(unit, 0.0), total_charge)
+        flows = {key: getattr(result, key) * discharge_share for key in BATTERY_DISCHARGE_FLOWS}
+        flows |= {key: getattr(result, key) * charge_share for key in BATTERY_CHARGE_FLOWS}
+        split[unit] = {key: round(value, precision) + 0.0 for key, value in flows.items()}
+    return split

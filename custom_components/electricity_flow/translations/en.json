@@ -3,100 +3,16 @@
     "abort": {
       "single_instance_allowed": "Electricity Flow is already configured."
     },
-    "error": {
-      "invalid_price_unit": "This entity is not a price per kWh (for example EUR/kWh).",
-      "invalid_template": "This template is not valid.",
-      "invalid_unit": "This sensor is not an energy sensor in Wh, kWh or MWh.",
-      "price_and_template": "Choose a price entity or a template, not both.",
-      "same_grid_sensor": "Import and export must be different sensors.",
-      "template_not_number": "This template does not return a number."
-    },
     "step": {
-      "battery": {
-        "description": "Select the energy meters of your batteries and optionally a price per flow.",
-        "sections": {
-          "charge": {
-            "data": {
-              "battery_charge_sensors": "Battery charge meters",
-              "price_grid_to_battery": "Grid to battery",
-              "price_solar_to_battery": "Solar to battery",
-              "price_template_grid_to_battery": "via template (optional)",
-              "price_template_solar_to_battery": "via template (optional)"
-            },
-            "data_description": {
-              "battery_charge_sensors": "One or more energy sensors with the energy charged into your batteries.",
-              "price_grid_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_solar_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_template_grid_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-              "price_template_solar_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-            },
-            "name": "Charge"
-          },
-          "discharge": {
-            "data": {
-              "battery_discharge_sensors": "Battery discharge meters",
-              "price_battery_to_grid": "Battery to grid",
-              "price_battery_to_home": "Battery to home",
-              "price_template_battery_to_grid": "via template (optional)",
-              "price_template_battery_to_home": "via template (optional)"
-            },
-            "data_description": {
-              "battery_discharge_sensors": "One or more energy sensors with the energy discharged from your batteries.",
-              "price_battery_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_battery_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_template_battery_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-              "price_template_battery_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-            },
-            "name": "Discharge"
-          }
-        },
-        "title": "Battery"
-      },
-      "grid": {
+      "user": {
+        "title": "Electricity Flow",
+        "description": "Add the grid, your solar sets and batteries afterwards, one at a time, with **Add device** on the integration page. Every device has the prices of the flows that come from it.",
         "data": {
-          "grid_export_sensor": "Grid export meter",
-          "grid_import_sensor": "Grid import meter"
+          "diagnostic_sensors": "Diagnostic sensors"
         },
         "data_description": {
-          "grid_export_sensor": "Cumulative energy sensor of the energy returned to the grid.",
-          "grid_import_sensor": "Cumulative energy sensor of the energy taken from the grid, for example the P1 meter total consumed energy."
-        },
-        "description": "Select the cumulative meters of your grid connection (Wh, kWh or MWh), for example from the P1 meter.",
-        "title": "Grid"
-      },
-      "house": {
-        "data": {
-          "price_grid_to_home": "Grid to home",
-          "price_house": "House",
-          "price_template_grid_to_home": "via template (optional)",
-          "price_template_house": "via template (optional)"
-        },
-        "data_description": {
-          "price_grid_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_house": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_template_grid_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "price_template_house": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-        },
-        "description": "Prices for the house consumption.",
-        "title": "House"
-      },
-      "solar": {
-        "data": {
-          "price_solar_to_grid": "Solar to grid",
-          "price_solar_to_home": "Solar to home",
-          "price_template_solar_to_grid": "via template (optional)",
-          "price_template_solar_to_home": "via template (optional)",
-          "solar_sensors": "Solar production meters"
-        },
-        "data_description": {
-          "price_solar_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_solar_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_template_solar_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "price_template_solar_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "solar_sensors": "One or more energy sensors of your inverters. A daily counter is fine too."
-        },
-        "description": "Select the energy meters of your inverters and optionally a price per solar flow.",
-        "title": "Solar"
+          "diagnostic_sensors": "Also make the sensors with the kWh of every flow in the current quarter, as diagnostic sensors. Only needed to check the calculation."
+        }
       }
     }
   },
@@ -119,9 +35,6 @@
       },
       "battery_to_home_cost_month": {
         "name": "Month {currency} – Battery to home"
-      },
-      "grid_net": {
-        "name": "Input quarter – Grid net"
       },
       "grid_to_battery": {
         "name": "kWh quarter – Grid to battery"
@@ -150,21 +63,6 @@
       "house_cost_month": {
         "name": "Month {currency} – House"
       },
-      "input_battery_charge": {
-        "name": "Input quarter – Battery charge"
-      },
-      "input_battery_discharge": {
-        "name": "Input quarter – Battery discharge"
-      },
-      "input_grid_export": {
-        "name": "Input quarter – Grid export"
-      },
-      "input_grid_import": {
-        "name": "Input quarter – Grid import"
-      },
-      "input_solar": {
-        "name": "Input quarter – Solar"
-      },
       "solar_to_battery": {
         "name": "kWh quarter – Solar to battery"
       },
@@ -191,131 +89,222 @@
       },
       "solar_to_home_cost_month": {
         "name": "Month {currency} – Solar to home"
+      },
+      "total_cost_day": {
+        "name": "Day {currency} – Total"
+      },
+      "total_cost_month": {
+        "name": "Month {currency} – Total"
       }
     }
   },
   "options": {
-    "error": {
-      "invalid_price_unit": "This entity is not a price per kWh (for example EUR/kWh).",
-      "invalid_template": "This template is not valid.",
-      "invalid_unit": "This sensor is not an energy sensor in Wh, kWh or MWh.",
-      "price_and_template": "Choose a price entity or a template, not both.",
-      "same_grid_sensor": "Import and export must be different sensors.",
-      "template_not_number": "This template does not return a number."
-    },
     "step": {
-      "battery": {
-        "description": "Select the energy meters of your batteries and optionally a price per flow.",
-        "sections": {
-          "charge": {
-            "data": {
-              "battery_charge_sensors": "Battery charge meters",
-              "price_grid_to_battery": "Grid to battery",
-              "price_solar_to_battery": "Solar to battery",
-              "price_template_grid_to_battery": "via template (optional)",
-              "price_template_solar_to_battery": "via template (optional)"
-            },
-            "data_description": {
-              "battery_charge_sensors": "One or more energy sensors with the energy charged into your batteries.",
-              "price_grid_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_solar_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_template_grid_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-              "price_template_solar_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-            },
-            "name": "Charge"
-          },
-          "discharge": {
-            "data": {
-              "battery_discharge_sensors": "Battery discharge meters",
-              "price_battery_to_grid": "Battery to grid",
-              "price_battery_to_home": "Battery to home",
-              "price_template_battery_to_grid": "via template (optional)",
-              "price_template_battery_to_home": "via template (optional)"
-            },
-            "data_description": {
-              "battery_discharge_sensors": "One or more energy sensors with the energy discharged from your batteries.",
-              "price_battery_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_battery_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-              "price_template_battery_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-              "price_template_battery_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-            },
-            "name": "Discharge"
-          }
-        },
-        "title": "Battery"
-      },
-      "grid": {
+      "init": {
+        "title": "Electricity Flow",
         "data": {
-          "grid_export_sensor": "Grid export meter",
-          "grid_import_sensor": "Grid import meter"
+          "diagnostic_sensors": "Diagnostic sensors"
         },
         "data_description": {
-          "grid_export_sensor": "Cumulative energy sensor of the energy returned to the grid.",
-          "grid_import_sensor": "Cumulative energy sensor of the energy taken from the grid, for example the P1 meter total consumed energy."
-        },
-        "description": "Select the cumulative meters of your grid connection (Wh, kWh or MWh), for example from the P1 meter.",
-        "title": "Grid"
-      },
-      "house": {
-        "data": {
-          "price_grid_to_home": "Grid to home",
-          "price_house": "House",
-          "price_template_grid_to_home": "via template (optional)",
-          "price_template_house": "via template (optional)"
-        },
-        "data_description": {
-          "price_grid_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_house": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_template_grid_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "price_template_house": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
-        },
-        "description": "Prices for the house consumption.",
-        "title": "House"
-      },
-      "solar": {
-        "data": {
-          "price_solar_to_grid": "Solar to grid",
-          "price_solar_to_home": "Solar to home",
-          "price_template_solar_to_grid": "via template (optional)",
-          "price_template_solar_to_home": "via template (optional)",
-          "solar_sensors": "Solar production meters"
-        },
-        "data_description": {
-          "price_solar_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_solar_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
-          "price_template_solar_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "price_template_solar_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
-          "solar_sensors": "One or more energy sensors of your inverters. A daily counter is fine too."
-        },
-        "description": "Select the energy meters of your inverters and optionally a price per solar flow.",
-        "title": "Solar"
+          "diagnostic_sensors": "Also make the sensors with the kWh of every flow in the current quarter, as diagnostic sensors. Only needed to check the calculation."
+        }
       }
     }
   },
   "issues": {
     "duplicate_source": {
       "title": "Sensor {entity} is selected more than once",
-      "description": "The sensor {entity} is selected as more than one meter ({roles}). Its energy is then counted twice and the flows are wrong.\n\nGo to **Settings → Devices & services → Electricity Flow → Configure** and select it only once."
+      "description": "The sensor {entity} is selected as more than one meter ({roles}). Its energy is then counted twice and the flows are wrong.\n\nGo to the device that uses it, via **Settings → Devices & services → Electricity Flow** and select it only once."
     },
     "source_unavailable": {
       "title": "Meter {entity} is unavailable",
-      "description": "The energy meter {entity} has been missing, unavailable or not a number for more than an hour. Until it is back the flows are incomplete.\n\nCheck the integration that provides this sensor, or select another meter via **Settings → Devices & services → Electricity Flow → Configure**. This message disappears by itself when the meter works again."
+      "description": "The energy meter {entity} has been missing, unavailable or not a number for more than an hour. Until it is back the flows are incomplete.\n\nCheck the integration that provides this sensor, or select another meter via the device that uses it, via **Settings → Devices & services → Electricity Flow**. This message disappears by itself when the meter works again."
     },
     "source_invalid_unit": {
       "title": "Meter {entity} has an unsupported unit",
-      "description": "The energy meter {entity} reports in {unit}, but Electricity Flow needs Wh, kWh or MWh. Its energy is not counted.\n\nSelect an energy meter (not a power sensor in W) via **Settings → Devices & services → Electricity Flow → Configure**."
+      "description": "The energy meter {entity} reports in {unit}, but Electricity Flow needs Wh, kWh or MWh. Its energy is not counted.\n\nSelect an energy meter (not a power sensor in W) via the device that uses it, via **Settings → Devices & services → Electricity Flow**."
     },
     "price_unavailable": {
       "title": "No price from {entity}",
-      "description": "The price from {entity} has been unavailable or not a number for more than an hour. Costs are calculated with the last valid price meanwhile, or not at all if there never was one.\n\nCheck the price sensor or template via **Settings → Devices & services → Electricity Flow → Configure**. This message disappears by itself when a valid price is back."
+      "description": "The price from {entity} has been unavailable or not a number for more than an hour. Costs are calculated with the last valid price meanwhile, or not at all if there never was one.\n\nCheck the price sensor or template via the device that uses it, via **Settings → Devices & services → Electricity Flow**. This message disappears by itself when a valid price is back."
     },
     "price_invalid_unit": {
       "title": "Price {entity} has an unsupported unit",
-      "description": "The price entity {entity} has the unit {unit}, which is not a price per energy. Use a price in for example EUR/kWh, ct/kWh or EUR/MWh. No costs are calculated with this price.\n\nChange it via **Settings → Devices & services → Electricity Flow → Configure**."
+      "description": "The price entity {entity} has the unit {unit}, which is not a price per energy. Use a price in for example EUR/kWh, ct/kWh or EUR/MWh. No costs are calculated with this price.\n\nChange it via the device that uses it, via **Settings → Devices & services → Electricity Flow**."
     },
     "price_currency": {
       "title": "Price {entity} is in another currency",
       "description": "The price entity {entity} is in {currency}, but Home Assistant uses {expected}. Electricity Flow does not convert currencies, so the cost sensors would show the wrong amount.\n\nUse a price in {expected}, or change the currency in **Settings → System → General**."
+    }
+  },
+  "config_subentries": {
+    "device": {
+      "initiate_flow": {
+        "user": "Add device",
+        "reconfigure": "Change device"
+      },
+      "entry_type": "Device",
+      "abort": {
+        "reconfigure_successful": "The device has been changed.",
+        "grid_already_added": "The grid has already been added. Change it with the menu of the grid device.",
+        "house_nothing_to_change": "The house has no settings. Its costs come from the prices on the grid, your solar sets and batteries."
+      },
+      "error": {
+        "name_required": "Enter a name.",
+        "name_not_unique": "A device with this name already exists.",
+        "no_meters": "Select at least one meter.",
+        "meter_in_use": "This meter already belongs to another device.",
+        "same_battery_meter": "Charge and discharge must be different meters.",
+        "invalid_unit": "This sensor is not an energy sensor in Wh, kWh or MWh.",
+        "same_grid_sensor": "Import and export must be different sensors.",
+        "invalid_price_unit": "This entity is not a price per kWh (for example EUR/kWh).",
+        "invalid_template": "This template is not valid.",
+        "price_and_template": "Choose a price entity or a template, not both.",
+        "template_not_number": "This template does not return a number."
+      },
+      "step": {
+        "user": {
+          "title": "Add device",
+          "description": "What do you want to add?",
+          "menu_options": {
+            "grid": "Grid connection",
+            "solar": "Solar set",
+            "battery": "Battery"
+          }
+        },
+        "grid": {
+          "title": "Grid",
+          "description": "The import and export meter of your grid connection, for example of the P1 meter, and optionally the prices of the flows from the grid.",
+          "data": {
+            "grid_import_sensor": "Grid import meter",
+            "grid_export_sensor": "Grid export meter",
+            "price_grid_to_home": "Price – Grid to home",
+            "price_template_grid_to_home": "via template (optional)",
+            "price_grid_to_battery": "Price – Grid to battery",
+            "price_template_grid_to_battery": "via template (optional)"
+          },
+          "data_description": {
+            "grid_import_sensor": "Increasing energy sensor of the energy you take from the grid.",
+            "grid_export_sensor": "Increasing energy sensor of the energy you send to the grid.",
+            "price_grid_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_grid_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_grid_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_grid_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          }
+        },
+        "solar": {
+          "data": {
+            "name": "Name",
+            "solar_sensors": "Solar yield meter",
+            "price_solar_to_home": "Price – Solar to home",
+            "price_template_solar_to_home": "via template (optional)",
+            "price_solar_to_grid": "Price – Solar to grid",
+            "price_template_solar_to_grid": "via template (optional)",
+            "price_solar_to_battery": "Price – Solar to battery",
+            "price_template_solar_to_battery": "via template (optional)"
+          },
+          "data_description": {
+            "name": "For example \"Roof east\". Used in the device and sensor names.",
+            "solar_sensors": "Energy sensor of the inverter of this solar set. A daily counter is fine too.",
+            "price_solar_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_solar_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_solar_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          },
+          "description": "Select the energy meter of the inverter of this solar set and optionally a price per flow from it. The set gets its own device; per quarter it gets its share of the solar flows, based on its share of the production.",
+          "title": "Add solar set"
+        },
+        "battery": {
+          "description": "Select the charge and discharge meter of this battery and optionally a price per flow from it. The battery gets its own device; per quarter it gets its share of the battery flows, based on its share of the charge and discharge. Charging costs the price of the solar set or grid it comes from.",
+          "title": "Add battery",
+          "data": {
+            "name": "Name",
+            "battery_charge_sensors": "Charge meter",
+            "battery_discharge_sensors": "Discharge meter",
+            "price_battery_to_home": "Price – Battery to home",
+            "price_template_battery_to_home": "via template (optional)",
+            "price_battery_to_grid": "Price – Battery to grid",
+            "price_template_battery_to_grid": "via template (optional)"
+          },
+          "data_description": {
+            "name": "For example \"Home battery\". Used in the device and sensor names.",
+            "battery_charge_sensors": "Energy sensor with the energy charged into this battery.",
+            "battery_discharge_sensors": "Energy sensor with the energy discharged from this battery.",
+            "price_battery_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_battery_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_battery_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_battery_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          }
+        },
+        "reconfigure_grid": {
+          "title": "Change grid",
+          "description": "The import and export meter of your grid connection, for example of the P1 meter, and optionally the prices of the flows from the grid.",
+          "data": {
+            "grid_import_sensor": "Grid import meter",
+            "grid_export_sensor": "Grid export meter",
+            "price_grid_to_home": "Price – Grid to home",
+            "price_template_grid_to_home": "via template (optional)",
+            "price_grid_to_battery": "Price – Grid to battery",
+            "price_template_grid_to_battery": "via template (optional)"
+          },
+          "data_description": {
+            "grid_import_sensor": "Increasing energy sensor of the energy you take from the grid.",
+            "grid_export_sensor": "Increasing energy sensor of the energy you send to the grid.",
+            "price_grid_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_grid_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_grid_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_grid_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          }
+        },
+        "reconfigure_solar": {
+          "data": {
+            "name": "Name",
+            "solar_sensors": "Solar yield meter",
+            "price_solar_to_home": "Price – Solar to home",
+            "price_template_solar_to_home": "via template (optional)",
+            "price_solar_to_grid": "Price – Solar to grid",
+            "price_template_solar_to_grid": "via template (optional)",
+            "price_solar_to_battery": "Price – Solar to battery",
+            "price_template_solar_to_battery": "via template (optional)"
+          },
+          "data_description": {
+            "name": "For example \"Roof east\". Used in the device and sensor names.",
+            "solar_sensors": "Energy sensor of the inverter of this solar set. A daily counter is fine too.",
+            "price_solar_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_solar_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_solar_to_battery": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_solar_to_battery": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          },
+          "description": "Select the energy meter of the inverter of this solar set and optionally a price per flow from it. The set gets its own device; per quarter it gets its share of the solar flows, based on its share of the production.",
+          "title": "Change solar set"
+        },
+        "reconfigure_battery": {
+          "description": "Select the charge and discharge meter of this battery and optionally a price per flow from it. The battery gets its own device; per quarter it gets its share of the battery flows, based on its share of the charge and discharge. Charging costs the price of the solar set or grid it comes from.",
+          "title": "Change battery",
+          "data": {
+            "name": "Name",
+            "battery_charge_sensors": "Charge meter",
+            "battery_discharge_sensors": "Discharge meter",
+            "price_battery_to_home": "Price – Battery to home",
+            "price_template_battery_to_home": "via template (optional)",
+            "price_battery_to_grid": "Price – Battery to grid",
+            "price_template_battery_to_grid": "via template (optional)"
+          },
+          "data_description": {
+            "name": "For example \"Home battery\". Used in the device and sensor names.",
+            "battery_charge_sensors": "Energy sensor with the energy charged into this battery.",
+            "battery_discharge_sensors": "Energy sensor with the energy discharged from this battery.",
+            "price_battery_to_home": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_battery_to_home": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh.",
+            "price_battery_to_grid": "Sensor or number with the price per kWh (EUR/kWh, EUR/MWh and ct/kWh are converted). Leave empty for no cost sensors for this flow.",
+            "price_template_battery_to_grid": "Optional, instead of a price entity. Useful to add for example a surcharge or energy tax. The template must return a number in currency per kWh."
+          }
+        }
+      }
     }
   }
 }

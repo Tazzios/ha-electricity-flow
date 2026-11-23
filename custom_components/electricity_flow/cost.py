@@ -13,7 +13,7 @@ Choices (see README):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
@@ -137,12 +137,42 @@ class QuarterCost:
         return self.kwh * self.price
 
 
+def combine_costs(parts: list[QuarterCost]) -> QuarterCost:
+    """Return the total of the costs of one flow on several devices.
+
+    The price is the average weighted by kWh, so kWh x price is the sum of
+    the costs. Parts without a price are left out; without any price the
+    total has no price either.
+    """
+    priced = [(p.kwh, p.price) for p in parts if p.price is not None]
+    kwh = sum(p.kwh for p in parts)
+    if not priced:
+        return QuarterCost(kwh=kwh, price=None)
+    if kwh == 0:
+        return QuarterCost(kwh=0.0, price=sum(price for _, price in priced) / len(priced))
+    cost = sum(part_kwh * price for part_kwh, price in priced)
+    return QuarterCost(kwh=kwh, price=cost / kwh)
+
+
 @dataclass(frozen=True, slots=True)
 class QuarterBooking:
     """All costs of one finished quarter."""
 
     quarter_start: datetime
     costs: dict[str, QuarterCost]
+    # Costs of the devices: unit id -> output key -> cost
+    unit_costs: dict[str, dict[str, QuarterCost]] = field(default_factory=dict)
+    # Total of every device (None when none of its flows had a price)
+    unit_totals: dict[str, float | None] = field(default_factory=dict)
+
+
+def signed_total(parts: list[tuple[int, QuarterCost]]) -> float | None:
+    """Return the sum of sign x cost, leaving out costs without a price.
+
+    None when no part has a cost.
+    """
+    costs = [sign * part.cost for sign, part in parts if part.cost is not None]
+    return sum(costs) if costs else None
 
 
 def day_start(moment: datetime) -> datetime:

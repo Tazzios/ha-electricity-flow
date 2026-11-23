@@ -35,7 +35,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
-from .calculation import FlowInput, FlowResult, calculate_flow
+from .calculation import FlowInput, FlowResult, calculate_flow, split_battery, split_solar
 from .const import (
     CONF_BATTERY_CHARGE_SENSORS,
     CONF_BATTERY_DISCHARGE_SENSORS,
@@ -43,7 +43,6 @@ from .const import (
     CONF_GRID_IMPORT_SENSOR,
     CONF_SOLAR_SENSORS,
     DOMAIN,
-    OUTPUT_KEYS,
     OUTPUT_PRECISION,
     PERIOD_MINUTES,
     ROLE_BATTERY_CHARGE,
@@ -52,11 +51,26 @@ from .const import (
     ROLE_GRID_IMPORT,
     ROLE_SOLAR,
     STORAGE_VERSION,
-    price_option,
-    price_template_option,
 )
-from .cost import PriceAverager, QuarterBooking, QuarterCost, price_currency, price_factor
+from .cost import (
+    PriceAverager,
+    QuarterBooking,
+    QuarterCost,
+    combine_costs,
+    price_currency,
+    price_factor,
+    signed_total,
+)
 from .issues import TEMPLATE_PREFIX, IssueTracker, price_key
+from .units import (
+    FLOW_SOURCE,
+    KIND_BATTERY,
+    KIND_FLOWS,
+    KIND_GRID,
+    Unit,
+    sources_from_entry,
+    units_from_entry,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,13 +103,21 @@ def period_start(moment: datetime) -> datetime:
 
 
 def sources_from_config(config: dict[str, Any]) -> dict[str, list[str]]:
-    """Map every role to the list of configured entity ids."""
+    """Map every role to the list of configured entity ids (no duplicates).
+
+    config has the meters in the flat format of sources_from_entry.
+    """
+
+    def meters(key: str) -> list[str]:
+        value = config.get(key) or []
+        return list(dict.fromkeys([value] if isinstance(value, str) else value))
+
     return {
-        ROLE_SOLAR: list(config.get(CONF_SOLAR_SENSORS, [])),
-        ROLE_BATTERY_CHARGE: list(config.get(CONF_BATTERY_CHARGE_SENSORS, [])),
-        ROLE_BATTERY_DISCHARGE: list(config.get(CONF_BATTERY_DISCHARGE_SENSORS, [])),
-        ROLE_GRID_IMPORT: [config[CONF_GRID_IMPORT_SENSOR]],
-        ROLE_GRID_EXPORT: [config[CONF_GRID_EXPORT_SENSOR]],
+        ROLE_SOLAR: meters(CONF_SOLAR_SENSORS),
+        ROLE_BATTERY_CHARGE: meters(CONF_BATTERY_CHARGE_SENSORS),
+        ROLE_BATTERY_DISCHARGE: meters(CONF_BATTERY_DISCHARGE_SENSORS),
+        ROLE_GRID_IMPORT: meters(CONF_GRID_IMPORT_SENSOR),
+        ROLE_GRID_EXPORT: meters(CONF_GRID_EXPORT_SENSOR),
     }
 
 
@@ -120,21 +142,6 @@ def state_to_kwh(state: State | None) -> float | None:
         )
         return None
     return value * factor
-
-
-def prices_from_config(config: dict[str, Any]) -> dict[str, str]:
-    """Map every output key with a price to its price source.
-
-    The source is the entity id of a price entity, or "template:" + the
-    template (a template wins when both are set).
-    """
-    prices: dict[str, str] = {}
-    for key in OUTPUT_KEYS:
-        if template := (config.get(price_template_option(key)) or "").strip():
-            prices[key] = f"{TEMPLATE_PREFIX}{template}"
-        elif entity_id := config.get(price_option(key)):
-            prices[key] = entity_id
-    return prices
 
 
 def template_result_to_price(result: Any) -> float | None:
@@ -178,11 +185,12 @@ class ElectricityFlowEngine:
         """Initialize the engine."""
         self.hass = hass
         self.entry = entry
-        # The options (when saved once) contain the complete configuration
-        config = dict(entry.options or entry.data)
-        self.sources = sources_from_config(config)
-        # output key -> price source (only outputs with a price get costs)
-        self.prices = prices_from_config(config)
+        # The grid, solar sets and batteries, each a device (sub-entry) with
+        # the prices of the flows it is the source of
+        self.units: list[Unit] = units_from_entry(entry)
+        self.sources = sources_from_config(sources_from_entry(entry))
+        # unit id -> flow key -> energy of that unit in the current period
+        self.unit_results: dict[str, dict[str, float]] = {}
         self.period_start: datetime = period_start(dt_util.now())
         self.result = FlowResult()
         self.period_input = FlowInput()
@@ -196,13 +204,53 @@ class ElectricityFlowEngine:
         self._source_reset: dict[str, str] = {}
         # price source -> average price of the current period
         self._price_avg: dict[str, PriceAverager] = {
-            source: PriceAverager() for source in set(self.prices.values())
+            source: PriceAverager() for source in {s for u in self.units for s in u.prices.values()}
         }
 
         self._listeners: list[Callable[[], None]] = []
         self._booking_listeners: list[Callable[[QuarterBooking], None]] = []
         self._store: Store[dict[str, Any]] = create_store(hass, entry.entry_id)
         self.issues = IssueTracker(hass)
+
+    def _units_of(self, kind: str) -> list[Unit]:
+        return [unit for unit in self.units if unit.kind == kind]
+
+    @property
+    def total_price_keys(self) -> set[str]:
+        """Return the flows of the totals that have costs.
+
+        A flow has costs when one of its sources has a price. The house has
+        costs when one of the flows to home has.
+        """
+        keys = {key for unit in self.units for key in unit.prices}
+        if keys & {"solar_to_home", "grid_to_home", "battery_to_home"}:
+            keys.add("house")
+        return keys
+
+    @property
+    def main_cost_keys(self) -> set[str]:
+        """Return the cost sensors of the main device: only the house.
+
+        The costs of every flow are on the device it comes from.
+        """
+        return self.total_price_keys & {"house"}
+
+    def unit_cost_keys(self, unit: Unit) -> set[str]:
+        """Return the flows of a device with a cost sensor: the ones it has a price for.
+
+        Charging a battery is not a sensor of the battery (that would double
+        the sensor of the source), but it is part of the battery total.
+        """
+        return set(unit.prices)
+
+    def unit_has_total(self, unit: Unit) -> bool:
+        """Return whether a device gets a total cost sensor."""
+        keys = set(self.unit_cost_keys(unit))
+        if unit.kind == KIND_BATTERY:
+            keys |= {"solar_to_battery", "grid_to_battery"} & self.total_price_keys
+        if unit.kind == KIND_GRID:
+            keys |= {"solar_to_grid", "battery_to_grid"} & self.total_price_keys
+        return bool(keys)
 
     @property
     def entity_ids(self) -> list[str]:
@@ -414,25 +462,82 @@ class ElectricityFlowEngine:
     @callback
     def _book_finished_period(self, end: datetime) -> None:
         """Calculate kWh x average price per output for the quarter that ended."""
-        if not self.prices:
+        if not self._price_avg:
             return
         # Close the price averages at the real end of the quarter
         averages = {
             entity_id: averager.finish(end) for entity_id, averager in self._price_avg.items()
         }
-        costs: dict[str, QuarterCost] = {}
-        for key, entity_id in self.prices.items():
-            price = averages[entity_id]
+        for source, price in averages.items():
             if price is None:
                 _LOGGER.warning(
                     "No valid price from %s for the quarter starting %s, cost not booked",
-                    entity_id,
+                    source,
                     self.period_start,
                 )
-            costs[key] = QuarterCost(kwh=getattr(self.result, key), price=price)
-        self.last_booking = QuarterBooking(quarter_start=self.period_start, costs=costs)
+        # Every device with the prices of the flows it is the source of
+        unit_costs: dict[str, dict[str, QuarterCost]] = {}
+        for unit in self.units:
+            flows = self.unit_results.get(unit.id, {})
+            unit_costs[unit.id] = {
+                key: QuarterCost(kwh=flows.get(key, 0.0), price=averages[source])
+                for key, source in unit.prices.items()
+            }
+        # The totals: every flow is the sum of its sources
+        costs: dict[str, QuarterCost] = {}
+        for key, kind in FLOW_SOURCE.items():
+            parts = [unit_costs[u.id][key] for u in self._units_of(kind) if key in unit_costs[u.id]]
+            if parts:
+                costs[key] = combine_costs(parts)
+        to_home = [
+            costs[k] for k in ("solar_to_home", "grid_to_home", "battery_to_home") if k in costs
+        ]
+        if to_home:
+            costs["house"] = combine_costs(to_home)
+        # A battery pays for its charging with the (average) price of the source
+        for battery in self._units_of(KIND_BATTERY):
+            flows = self.unit_results.get(battery.id, {})
+            for key in ("solar_to_battery", "grid_to_battery"):
+                if key in costs:
+                    unit_costs[battery.id][key] = QuarterCost(
+                        kwh=flows.get(key, 0.0), price=costs[key].price
+                    )
+        unit_totals = {
+            unit.id: signed_total(self._total_parts(unit, unit_costs[unit.id], costs))
+            for unit in self.units
+        }
+        self.last_booking = QuarterBooking(
+            quarter_start=self.period_start,
+            costs=costs,
+            unit_costs=unit_costs,
+            unit_totals=unit_totals,
+        )
         for booking_callback in list(self._booking_listeners):
             booking_callback(self.last_booking)
+
+    @staticmethod
+    def _total_parts(
+        unit: Unit, own: dict[str, QuarterCost], totals: dict[str, QuarterCost]
+    ) -> list[tuple[int, QuarterCost]]:
+        """Return the costs of a device with their sign for its total.
+
+        A solar set: the value of all it delivers. A battery: what it delivers
+        minus what charging cost. The grid: what it delivers minus the
+        energy fed back (solar and battery to grid, priced at their source).
+        """
+        if unit.kind == KIND_BATTERY:
+            signs = {
+                "battery_to_home": 1,
+                "battery_to_grid": 1,
+                "solar_to_battery": -1,
+                "grid_to_battery": -1,
+            }
+        else:
+            signs = dict.fromkeys(KIND_FLOWS[unit.kind], 1)
+        parts = [(sign, own[key]) for key, sign in signs.items() if key in own]
+        if unit.kind == KIND_GRID:
+            parts += [(-1, totals[k]) for k in ("solar_to_grid", "battery_to_grid") if k in totals]
+        return parts
 
     # ------------------------------------------------------------ calculation
 
@@ -509,7 +614,10 @@ class ElectricityFlowEngine:
             self._period_energy[entity_id] = self._period_energy.get(entity_id, 0.0) + delta
 
     def _role_total(self, role: str) -> float:
-        return sum(self._period_energy.get(e, 0.0) for e in self.sources[role])
+        return self._energy(self.sources[role])
+
+    def _energy(self, entity_ids: tuple[str, ...] | list[str]) -> float:
+        return sum(self._period_energy.get(e, 0.0) for e in entity_ids)
 
     @callback
     def _recalculate(self) -> None:
@@ -521,4 +629,23 @@ class ElectricityFlowEngine:
             grid_export=self._role_total(ROLE_GRID_EXPORT),
         )
         self.result = calculate_flow(self.period_input, OUTPUT_PRECISION)
+        self._split_over_units()
         self._store.async_delay_save(self._data_to_save, 10)
+
+    @callback
+    def _split_over_units(self) -> None:
+        """Divide the flows over the devices (solar sets and batteries by share)."""
+        if not self.units:
+            return
+        production = {u.id: self._energy(u.solar) for u in self.units if u.solar}
+        charge = {u.id: self._energy(u.charge) for u in self.units if u.charge}
+        discharge = {u.id: self._energy(u.discharge) for u in self.units if u.discharge}
+        self.unit_results = {
+            **split_solar(self.period_input, self.result, production, OUTPUT_PRECISION),
+            **split_battery(self.period_input, self.result, charge, discharge, OUTPUT_PRECISION),
+            # The grid (one at most) has the grid flows completely
+            **{
+                u.id: {key: getattr(self.result, key) for key in KIND_FLOWS[KIND_GRID]}
+                for u in self._units_of(KIND_GRID)
+            },
+        }
