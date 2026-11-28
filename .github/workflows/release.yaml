@@ -24,7 +24,19 @@ jobs:
         run: |
           cd custom_components/electricity_flow
           zip -r "$GITHUB_WORKSPACE/electricity_flow.zip" . -x "*__pycache__*" "*.pyc"
+      - name: Take the release note from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## / { if (found) exit; if (index($0, "## " v " ") == 1 || $0 == "## " v) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+          if ! grep -q '[^[:space:]]' release_notes.md; then
+            echo "CHANGELOG.md has no section '## $version'"
+            exit 1
+          fi
+          cat release_notes.md
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release_notes.md
           files: electricity_flow.zip
