@@ -1,42 +1,70 @@
 name: Release
 
+# A new version on main is released by itself: when the version in manifest.json
+# has no tag yet, this workflow creates the tag v<version> and the GitHub release
+# with the section of that version in CHANGELOG.md and electricity_flow.zip.
+# It can also be started by hand (Actions -> Release -> Run workflow).
+
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+    paths:
+      - custom_components/electricity_flow/manifest.json
+      - CHANGELOG.md
+      - .github/workflows/release.yaml
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Check that the tag matches the manifest version
+        with:
+          fetch-depth: 0
+      - name: Read the version and check whether it is released already
+        id: version
         run: |
           version=$(python3 -c "import json; print(json.load(open('custom_components/electricity_flow/manifest.json'))['version'])")
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match manifest version $version"
-            exit 1
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "v$version is released already, nothing to do"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Build the zip that HACS installs
-        run: |
-          cd custom_components/electricity_flow
-          zip -r "$GITHUB_WORKSPACE/electricity_flow.zip" . -x "*__pycache__*" "*.pyc"
       - name: Take the release note from CHANGELOG.md
+        if: steps.version.outputs.new == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          awk -v v="$version" '
+          awk -v v="$VERSION" '
             /^## / { if (found) exit; if (index($0, "## " v " ") == 1 || $0 == "## " v) { found = 1; next } }
             found { print }
           ' CHANGELOG.md > release_notes.md
           if ! grep -q '[^[:space:]]' release_notes.md; then
-            echo "CHANGELOG.md has no section '## $version'"
+            echo "CHANGELOG.md has no section '## $VERSION'"
             exit 1
           fi
           cat release_notes.md
-      - uses: softprops/action-gh-release@v2
+      - name: Build the zip that HACS installs
+        if: steps.version.outputs.new == 'true'
+        run: |
+          cd custom_components/electricity_flow
+          zip -r "$GITHUB_WORKSPACE/electricity_flow.zip" . -x "*__pycache__*" "*.pyc"
+      - name: Create the tag and the release
+        if: steps.version.outputs.new == 'true'
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: v${{ steps.version.outputs.version }}
           body_path: release_notes.md
           files: electricity_flow.zip
