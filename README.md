@@ -88,9 +88,10 @@ mypy
 GitHub Actions run the same checks plus hassfest and the HACS validation.
 
 To release: raise `version` in `manifest.json`, add a section `## <version> - <date>`
-to `CHANGELOG.md`, then push a tag `v<version>`. The Release workflow creates the GitHub
-release with that section as release note and `electricity_flow.zip`, the file HACS
-installs. Without a changelog section the release fails.
+to `CHANGELOG.md` and merge to main. Then start **Actions → Release → Run workflow**:
+it creates the tag `v<version>` and the GitHub release, with that section as release
+note and `electricity_flow.zip`, the file HACS installs. Without a changelog section
+or for a version that already has a tag the release stops with an error.
 
 ## License
 
