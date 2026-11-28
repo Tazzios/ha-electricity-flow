@@ -1,18 +1,11 @@
 name: Release
 
-# A new version on main is released by itself: when the version in manifest.json
-# has no tag yet, this workflow creates the tag v<version> and the GitHub release
-# with the section of that version in CHANGELOG.md and electricity_flow.zip.
-# It can also be started by hand (Actions -> Release -> Run workflow).
+# Started by hand: Actions -> Release -> Run workflow (on main).
+# When the version in manifest.json has no tag yet, this workflow creates the tag
+# v<version> and the GitHub release with the section of that version in
+# CHANGELOG.md and electricity_flow.zip.
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - custom_components/electricity_flow/manifest.json
-      - CHANGELOG.md
-      - .github/workflows/release.yaml
   workflow_dispatch:
 
 permissions:
