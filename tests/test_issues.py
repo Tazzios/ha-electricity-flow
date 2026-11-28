@@ -16,6 +16,8 @@ from custom_components.electricity_flow.const import DOMAIN
 from custom_components.electricity_flow.cost import price_currency
 from custom_components.electricity_flow.issues import describe_source
 
+from .helpers import make_entry
+
 KWH = {"unit_of_measurement": "kWh"}
 PRICE = {"unit_of_measurement": "EUR/kWh"}
 CONFIG = {
@@ -38,7 +40,7 @@ def _sources(hass: HomeAssistant) -> None:
 
 
 async def _setup(hass: HomeAssistant, options: dict) -> MockConfigEntry:
-    entry = MockConfigEntry(domain=DOMAIN, data=CONFIG, options=options)
+    entry = make_entry(options)
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -92,8 +94,11 @@ async def test_duplicate_source(hass: HomeAssistant) -> None:
         "roles": "solar, battery_discharge",
     }
 
-    # Fixed in the options: the issue is gone after the reload
-    hass.config_entries.async_update_entry(entry, options=CONFIG)
+    # Fixed on the battery device: the issue is gone after the reload
+    battery = next(s for s in entry.subentries.values() if s.data["kind"] == "battery")
+    hass.config_entries.async_update_subentry(
+        entry, battery, data={**battery.data, "battery_discharge_sensors": []}
+    )
     await hass.async_block_till_done()
     assert _issues(hass) == {}
 
@@ -154,7 +159,7 @@ async def test_price_issues(hass: HomeAssistant, freezer: FrozenDateTimeFactory)
             "price_grid_to_home": "sensor.price",
             "price_solar_to_grid": "sensor.feed_in",
             "price_solar_to_home": "sensor.cents",
-            "price_template_house": "{{ states('sensor.missing') | float(none) }}",
+            "price_template_grid_to_battery": "{{ states('sensor.missing') | float(none) }}",
         },
     )
     issues = _issues(hass)

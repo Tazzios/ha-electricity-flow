@@ -58,8 +58,8 @@ def price_template_option(output_key: str) -> str:
     return f"{CONF_PRICE_TEMPLATE_PREFIX}{output_key}"
 
 
-# Config pages: source sensors and the output flows whose price is set there
-PAGE_GRID: Final = "grid"
-PAGE_SOLAR: Final = "solar"
-PAGE_BATTERY: Final = "battery"
-PAGE_HOUSE: Final = "house"
+# Option: also create the kWh per quarter sensors (diagnostic, for debugging)
+CONF_DIAGNOSTIC_SENSORS: Final = "diagnostic_sensors"
+
+# Key of the total cost sensors of a device (all its flows together)
+TOTAL_KEY: Final = "total"

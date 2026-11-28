@@ -20,6 +20,11 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match manifest version $version"
             exit 1
           fi
+      - name: Build the zip that HACS installs
+        run: |
+          cd custom_components/electricity_flow
+          zip -r "$GITHUB_WORKSPACE/electricity_flow.zip" . -x "*__pycache__*" "*.pyc"
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          files: electricity_flow.zip
