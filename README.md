@@ -7,6 +7,7 @@ No utility meters, template sensors or helpers are needed: the integration keeps
 of the energy per quarter itself.
 
 More explanation is in the [wiki](https://github.com/Tazzios/ha-electricity-flow/wiki).
+Changes per version are in the [changelog](CHANGELOG.md).
 
 ## Installation
 
